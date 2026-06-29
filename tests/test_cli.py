@@ -4,7 +4,7 @@ import os
 import sys
 import types
 
-from podget import cli, core
+from podpull import cli, core
 
 
 def _show():

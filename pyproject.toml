@@ -3,8 +3,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "podget"
-version = "0.2.1"
+name = "podpull"
+version = "0.3.0"
 description = "Download specific podcast episode audio from Apple Podcasts, RSS feeds, or xiaoyuzhou links — with an interactive picker."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -25,17 +25,17 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/xiaoleiy/podget"
-Issues = "https://github.com/xiaoleiy/podget/issues"
+Homepage = "https://github.com/xiaoleiy/podpull"
+Issues = "https://github.com/xiaoleiy/podpull/issues"
 
 [project.scripts]
-podget = "podget.cli:main"
+podpull = "podpull.cli:main"
 
 [project.optional-dependencies]
 dev = ["pytest>=7"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/podget"]
+packages = ["src/podpull"]
 
 [tool.ruff]
 line-length = 100

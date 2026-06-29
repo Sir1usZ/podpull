@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>podget — the episode grabber</title>
-<meta name="description" content="podget downloads any podcast episode straight to your shell — from Apple Podcasts, an RSS feed, or a 小宇宙/xiaoyuzhou link. No app, no login, no DRM.">
-<meta property="og:title" content="podget — the episode grabber">
+<title>podpull — the episode grabber</title>
+<meta name="description" content="podpull downloads any podcast episode straight to your shell — from Apple Podcasts, an RSS feed, or a 小宇宙/xiaoyuzhou link. No app, no login, no DRM.">
+<meta property="og:title" content="podpull — the episode grabber">
 <meta property="og:description" content="Download any podcast episode straight to your shell. Apple Podcasts · RSS · 小宇宙. Interactive picker, live progress, resumable.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23161310'/%3E%3Ctext x='5' y='23' font-family='monospace' font-size='20' fill='%23e8330f'%3E%E2%96%B8%3C/text%3E%3C/svg%3E">
@@ -201,8 +201,8 @@ a{color:inherit}
 <body>
 
 <div class="topbar"><div class="wrap">
-  <span>▸ podget <span class="dot">//</span> the episode grabber</span>
-  <span><a href="https://github.com/xiaoleiy/podget">github.com/xiaoleiy/podget ↗</a></span>
+  <span>▸ podpull <span class="dot">//</span> the episode grabber</span>
+  <span><a href="https://github.com/xiaoleiy/podpull">github.com/xiaoleiy/podpull ↗</a></span>
 </div></div>
 
 <header class="masthead"><div class="wrap">
@@ -228,13 +228,13 @@ a{color:inherit}
 <section class="wrap lede-grid">
   <div class="lede reveal">
     <span class="kicker">Dispatch · What it is</span>
-    <p class="drop">Apple Podcasts holds no audio. It’s a directory — every show points at an RSS feed where each episode carries a direct link to its file. <b>podget</b> walks that chain and hands you the audio.</p>
+    <p class="drop">Apple Podcasts holds no audio. It’s a directory — every show points at an RSS feed where each episode carries a direct link to its file. <b>podpull</b> walks that chain and hands you the audio.</p>
     <p>Give it a show, pick episodes from an interactive list, and they land on your disk — named, dated, resumable. One small command-line tool. No subscription, no account, nothing to trust.</p>
   </div>
   <div class="figure reveal">
-    <div class="figcap"><span>Fig. 01 — Live session</span><span>▸ podget get</span></div>
+    <div class="figcap"><span>Fig. 01 — Live session</span><span>▸ podpull get</span></div>
     <div class="term" id="term">
-      <div class="term__bar"><i></i><i></i><i></i><span>~/Downloads/Podcasts — podget</span></div>
+      <div class="term__bar"><i></i><i></i><i></i><span>~/Downloads/Podcasts — podpull</span></div>
       <div class="term__body" id="termbody"></div>
     </div>
   </div>
@@ -246,17 +246,17 @@ a{color:inherit}
     <div class="step reveal">
       <div class="n"><em>0</em>1</div><h3>Search</h3>
       <p>Find any show by name. iTunes’ open catalog — 4&nbsp;million+ feeds, no key required.</p>
-      <code><span class="p">$</span> podget search <b>"睡前故事"</b></code>
+      <code><span class="p">$</span> podpull search <b>"睡前故事"</b></code>
     </div>
     <div class="step reveal">
       <div class="n"><em>0</em>2</div><h3>Pick</h3>
       <p>Hand it a show and choose from an interactive list — arrow keys, space to toggle, one or many.</p>
-      <code><span class="p">$</span> podget get <b>1532755821</b></code>
+      <code><span class="p">$</span> podpull get <b>1532755821</b></code>
     </div>
     <div class="step reveal">
       <div class="n"><em>0</em>3</div><h3>Download</h3>
       <p>Resumable, with a live progress bar. Saved as <span class="mono">YYYY-MM-DD&nbsp;-&nbsp;title.mp3</span>.</p>
-      <code><span class="p">$</span> podget get 1532755821 <b>--latest 3</b></code>
+      <code><span class="p">$</span> podpull get 1532755821 <b>--latest 3</b></code>
     </div>
   </div>
 </div></section>
@@ -290,24 +290,24 @@ a{color:inherit}
   <div class="cmds">
     <div class="cmd">
       <div class="cmd__top">Homebrew — recommended</div>
-      <div class="cmd__body"><code><span class="p">$</span> brew install xiaoleiy/tap/podget</code>
-        <button class="copy" data-copy="brew install xiaoleiy/tap/podget">Copy</button></div>
+      <div class="cmd__body"><code><span class="p">$</span> brew install xiaoleiy/tap/podpull</code>
+        <button class="copy" data-copy="brew install xiaoleiy/tap/podpull">Copy</button></div>
     </div>
     <div class="cmd">
       <div class="cmd__top">pipx — from source</div>
-      <div class="cmd__body"><code><span class="p">$</span> pipx install git+https://github.com/xiaoleiy/podget</code>
-        <button class="copy" data-copy="pipx install git+https://github.com/xiaoleiy/podget">Copy</button></div>
+      <div class="cmd__body"><code><span class="p">$</span> pipx install git+https://github.com/xiaoleiy/podpull</code>
+        <button class="copy" data-copy="pipx install git+https://github.com/xiaoleiy/podpull">Copy</button></div>
     </div>
   </div>
-  <p class="note">Then just <span class="mono" style="color:#ffd24a">podget get &lt;show&gt;</span> and start picking. ·
-  Full docs &amp; source on <a href="https://github.com/xiaoleiy/podget">GitHub ↗</a></p>
+  <p class="note">Then just <span class="mono" style="color:#ffd24a">podpull get &lt;show&gt;</span> and start picking. ·
+  Full docs &amp; source on <a href="https://github.com/xiaoleiy/podpull">GitHub ↗</a></p>
 </div></section>
 
 <footer class="foot"><div class="wrap">
   <div class="foot__grid">
     <span>MIT License · © 2026</span>
     <span>Built by <a href="https://github.com/xiaoleiy">xiaoleiy</a></span>
-    <span><a href="https://github.com/xiaoleiy/podget">Source ↗</a> · <a href="https://github.com/xiaoleiy/podget/issues">Issues ↗</a></span>
+    <span><a href="https://github.com/xiaoleiy/podpull">Source ↗</a> · <a href="https://github.com/xiaoleiy/podpull/issues">Issues ↗</a></span>
   </div>
   <div class="big serif">Stop streaming.<br>Start <i>keeping.</i></div>
 </div></footer>
@@ -353,7 +353,7 @@ document.querySelectorAll(".reveal").forEach(function(el){ io.observe(el); });
       await sleep(reduce?0:55);
     }
   }
-  function header(){ var f=document.createDocumentFragment(); f.appendChild(span("p","$ ")); f.appendChild(span("c","podget get 1532755821")); f.appendChild(document.createTextNode("\n")); return f; }
+  function header(){ var f=document.createDocumentFragment(); f.appendChild(span("p","$ ")); f.appendChild(span("c","podpull get 1532755821")); f.appendChild(document.createTextNode("\n")); return f; }
   function resolvedBlock(){
     var f=document.createDocumentFragment();
     f.appendChild(header());
@@ -378,7 +378,7 @@ document.querySelectorAll(".reveal").forEach(function(el){ io.observe(el); });
 
   async function run(){
     while(true){
-      await typeCmd("$ ", "podget get 1532755821");
+      await typeCmd("$ ", "podpull get 1532755821");
       await sleep(reduce?0:450);
       set(header(), span("d","⠙ Resolving show via iTunes…"));
       await sleep(reduce?0:650);

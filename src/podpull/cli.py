@@ -1,4 +1,4 @@
-"""podget command-line interface.
+"""podpull command-line interface.
 
 UI (colors, spinners, progress bars, interactive selection) lives here; all
 network/parse logic lives in `core` and stays dependency-free. File paths are
@@ -31,7 +31,7 @@ ui = Console(stderr=True)              # stderr — humans (spinners, tables, ba
 
 
 def _err(msg: str) -> None:
-    ui.print(f"[bold red]podget:[/] {msg}")
+    ui.print(f"[bold red]podpull:[/] {msg}")
 
 
 def _interactive() -> bool:
@@ -105,7 +105,7 @@ def cmd_search(args) -> int:
         table.add_row(str(r.get("collectionId")), str(r.get("trackCount") or "?"),
                       r.get("collectionName") or "", r.get("artistName") or "")
     ui.print(table)
-    ui.print("[dim]Next:[/] podget list <Apple ID>  •  podget get <Apple ID>")
+    ui.print("[dim]Next:[/] podpull list <Apple ID>  •  podpull get <Apple ID>")
     return 0
 
 
@@ -150,8 +150,8 @@ def cmd_list(args) -> int:
     for i, e in enumerate(eps):
         table.add_row(str(i), e.date, e.title)
     ui.print(table)
-    ui.print("[dim]Download:[/] podget get <src> --index N[,N]  •  --match RE  •  --latest N "
-             "•  or just `podget get <src>` to pick interactively")
+    ui.print("[dim]Download:[/] podpull get <src> --index N[,N]  •  --match RE  •  --latest N "
+             "•  or just `podpull get <src>` to pick interactively")
     return 0
 
 
@@ -233,15 +233,15 @@ def cmd_get(args) -> int:
 # --------------------------------------------------------------------------- #
 EXAMPLES = """
 [bold]Examples[/]
-  [cyan]podget search[/] "睡前故事"                 find shows (Apple ID, episode count)
-  [cyan]podget info[/]  1532755821                  show metadata + latest episode
-  [cyan]podget list[/]  1532755821 --match EP34     list episodes (filter by title regex)
+  [cyan]podpull search[/] "睡前故事"                 find shows (Apple ID, episode count)
+  [cyan]podpull info[/]  1532755821                  show metadata + latest episode
+  [cyan]podpull list[/]  1532755821 --match EP34     list episodes (filter by title regex)
 
-  [cyan]podget get[/]   1532755821                  ← pick episodes interactively (↑/↓, space, enter)
-  [cyan]podget get[/]   1532755821 --latest 3       newest 3 episodes
-  [cyan]podget get[/]   1532755821 --index 0,2,5    by list number (0 = newest)
-  [cyan]podget get[/]   1532755821 --match "牛頭人"  by title regex
-  [cyan]podget get[/]   "https://www.xiaoyuzhoufm.com/episode/<id>"   a pasted link
+  [cyan]podpull get[/]   1532755821                  ← pick episodes interactively (↑/↓, space, enter)
+  [cyan]podpull get[/]   1532755821 --latest 3       newest 3 episodes
+  [cyan]podpull get[/]   1532755821 --index 0,2,5    by list number (0 = newest)
+  [cyan]podpull get[/]   1532755821 --match "牛頭人"  by title regex
+  [cyan]podpull get[/]   "https://www.xiaoyuzhoufm.com/episode/<id>"   a pasted link
 
 [dim]<src> = Apple show URL · bare Apple ID · RSS feed URL · Apple ?i= episode URL · xiaoyuzhou link[/]
 [dim]Downloads default to ~/Downloads/Podcasts (override with --out).[/]
@@ -250,11 +250,11 @@ EXAMPLES = """
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog="podget", formatter_class=_Formatter,
+        prog="podpull", formatter_class=_Formatter,
         description="Download specific podcast episode audio from Apple Podcasts, "
                     "RSS feeds, or xiaoyuzhou links.",
         epilog=EXAMPLES)
-    p.add_argument("--version", action="version", version=f"podget {__version__}")
+    p.add_argument("--version", action="version", version=f"podpull {__version__}")
     sub = p.add_subparsers(dest="cmd", metavar="<command>")
 
     s = sub.add_parser("search", help="search for podcast shows", formatter_class=_Formatter,
@@ -297,7 +297,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    if not getattr(args, "func", None):     # bare `podget` -> show usage, not an error
+    if not getattr(args, "func", None):     # bare `podpull` -> show usage, not an error
         parser.print_help()
         return 0
     try:

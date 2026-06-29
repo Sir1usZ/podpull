@@ -1,8 +1,8 @@
 """Pure-logic tests (no network)."""
 import pytest
 
-from podget import core
-from podget.core import Episode
+from podpull import core
+from podpull.core import Episode
 
 
 def test_classify():

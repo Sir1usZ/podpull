@@ -3,13 +3,20 @@
 All notable changes to this project are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.3.0] — 2026-06-29
+
+### Changed
+- **Renamed `podget` → `podpull`** — repo, command, import package, and Homebrew formula.
+  No functional changes. (`podget` was taken on PyPI; `podpull` is free, descriptive, and
+  reads as "pull a pod".) The old GitHub URL auto-redirects.
+
 ## [0.2.1] — 2026-06-29
 
 ### Fixed
 - **xiaoyuzhou 403**: `feed.xyzfm.space` (and similar CDNs) returned `HTTP 403 Forbidden`
-  to podget's tool User-Agent, breaking `info`/`list`/`get` for xiaoyuzhou-hosted shows
-  (e.g. 小小新问 LittleNews). podget now sends a standard browser User-Agent.
-- Running `podget` with no command prints usage/help (exit 0) instead of an argparse error.
+  to podpull's tool User-Agent, breaking `info`/`list`/`get` for xiaoyuzhou-hosted shows
+  (e.g. 小小新问 LittleNews). podpull now sends a standard browser User-Agent.
+- Running `podpull` with no command prints usage/help (exit 0) instead of an argparse error.
 
 ### Added
 - Project landing page under `docs/` (served via GitHub Pages).
@@ -19,7 +26,7 @@ All notable changes to this project are documented here. Format loosely follows
 UX overhaul. Adds dependencies: `rich`, `rich-argparse`, `questionary`.
 
 ### Added
-- **Interactive multi-select picker**: `podget get <show>` with no selector opens a
+- **Interactive multi-select picker**: `podpull get <show>` with no selector opens a
   keyboard-driven checkbox list (↑/↓ move, space toggle, `a` select-all, enter confirm).
 - **Progress feedback**: spinners with step messages for network fetches (resolving
   show → fetching feed → parsing), and `rich` progress bars (size, speed, ETA) for downloads.
@@ -37,9 +44,9 @@ UX overhaul. Adds dependencies: `rich`, `rich-argparse`, `questionary`.
 Initial public release. Core feature set, Python standard library only.
 
 ### Added
-- `podget search <term>` — find shows via the iTunes Search API.
-- `podget info <src>` — show metadata (title, author, Apple id, feed, episode count, latest).
-- `podget list <src>` — list episodes, with `--match REGEX`, `--all`, `--limit`.
-- `podget get <src>` — download episode audio, by `--match` / `--latest N` / `--index 0,2`.
+- `podpull search <term>` — find shows via the iTunes Search API.
+- `podpull info <src>` — show metadata (title, author, Apple id, feed, episode count, latest).
+- `podpull list <src>` — list episodes, with `--match REGEX`, `--all`, `--limit`.
+- `podpull get <src>` — download episode audio, by `--match` / `--latest N` / `--index 0,2`.
 - Direct episode links: xiaoyuzhou (`og:audio`) and Apple (`?i=`, matched in feed; `yt-dlp` fallback).
 - Resumable, stdlib-only downloader; filenames as `YYYY-MM-DD - title.ext`.
