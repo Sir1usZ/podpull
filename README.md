@@ -24,16 +24,19 @@ pasted **Apple episode** link (`…?i=<id>`, matched in the feed).
 ## Install
 
 ```bash
-pipx install git+https://github.com/xiaoleiy/podget        # recommended
-# or
-pip install git+https://github.com/xiaoleiy/podget
+# Homebrew (recommended)
+brew install xiaoleiy/tap/podget
+
+# or pipx / pip, straight from git
+pipx install git+https://github.com/xiaoleiy/podget
+pip   install git+https://github.com/xiaoleiy/podget
 ```
 
 Requires Python 3.9+. Optional: `yt-dlp` (deep-catalog Apple-episode fallback),
 `ffmpeg`/`ffprobe` (verify downloads).
 
 > **Note:** the name `podget` is taken on PyPI by an unrelated project, so this
-> tool is installed from git, not `pip install podget`.
+> tool is installed via the Homebrew tap or from git — not `pip install podget`.
 
 ## Usage
 
