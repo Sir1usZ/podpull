@@ -21,8 +21,8 @@ classifiers = [
 dependencies = []   # stdlib only
 
 [project.urls]
-Homepage = "https://github.com/xiaoliy/podget"
-Issues = "https://github.com/xiaoliy/podget/issues"
+Homepage = "https://github.com/xiaoleiy/podget"
+Issues = "https://github.com/xiaoleiy/podget/issues"
 
 [project.scripts]
 podget = "podget.cli:main"

@@ -15,7 +15,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from email.utils import parsedate_to_datetime
 
-UA = "Mozilla/5.0 (compatible; podget/0.1; +https://github.com/xiaoliy/podget)"
+UA = "Mozilla/5.0 (compatible; podget/0.1; +https://github.com/xiaoleiy/podget)"
 ITUNES_LOOKUP = "https://itunes.apple.com/lookup"
 ITUNES_SEARCH = "https://itunes.apple.com/search"
 

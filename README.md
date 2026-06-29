@@ -24,9 +24,9 @@ pasted **Apple episode** link (`…?i=<id>`, matched in the feed).
 ## Install
 
 ```bash
-pipx install git+https://github.com/xiaoliy/podget        # recommended
+pipx install git+https://github.com/xiaoleiy/podget        # recommended
 # or
-pip install git+https://github.com/xiaoliy/podget
+pip install git+https://github.com/xiaoleiy/podget
 ```
 
 Requires Python 3.9+. Optional: `yt-dlp` (deep-catalog Apple-episode fallback),
