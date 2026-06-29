@@ -3,6 +3,17 @@
 All notable changes to this project are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.2.1] — 2026-06-29
+
+### Fixed
+- **xiaoyuzhou 403**: `feed.xyzfm.space` (and similar CDNs) returned `HTTP 403 Forbidden`
+  to podget's tool User-Agent, breaking `info`/`list`/`get` for xiaoyuzhou-hosted shows
+  (e.g. 小小新问 LittleNews). podget now sends a standard browser User-Agent.
+- Running `podget` with no command prints usage/help (exit 0) instead of an argparse error.
+
+### Added
+- Project landing page under `docs/` (served via GitHub Pages).
+
 ## [0.2.0] — 2026-06-29
 
 UX overhaul. Adds dependencies: `rich`, `rich-argparse`, `questionary`.

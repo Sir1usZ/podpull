@@ -14,7 +14,10 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from email.utils import parsedate_to_datetime
 
-UA = "Mozilla/5.0 (compatible; podget/0.1; +https://github.com/xiaoleiy/podget)"
+# A plain browser User-Agent. Some podcast CDNs (e.g. xiaoyuzhou's feed.xyzfm.space)
+# return 403 to identifiable bot/tool UAs, so we present as a normal browser.
+UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+      "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
 ITUNES_LOOKUP = "https://itunes.apple.com/lookup"
 ITUNES_SEARCH = "https://itunes.apple.com/search"
 

@@ -7,6 +7,8 @@ Apple Podcasts show, a raw RSS feed, or an episode link (Apple or
 No login, no DRM. Pick episodes from an **interactive multi-select list**, with
 spinners and progress bars so you always know what's happening.
 
+**Website:** https://xiaoleiy.github.io/podget
+
 ## How it works
 
 Apple Podcasts hosts **no audio** — it is a directory that points at each show's

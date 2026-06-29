@@ -255,7 +255,7 @@ def build_parser() -> argparse.ArgumentParser:
                     "RSS feeds, or xiaoyuzhou links.",
         epilog=EXAMPLES)
     p.add_argument("--version", action="version", version=f"podget {__version__}")
-    sub = p.add_subparsers(dest="cmd", metavar="<command>", required=True)
+    sub = p.add_subparsers(dest="cmd", metavar="<command>")
 
     s = sub.add_parser("search", help="search for podcast shows", formatter_class=_Formatter,
                        description="Search the iTunes catalog for shows by name/keyword.")
@@ -295,7 +295,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if not getattr(args, "func", None):     # bare `podget` -> show usage, not an error
+        parser.print_help()
+        return 0
     try:
         return args.func(args)
     except KeyboardInterrupt:
