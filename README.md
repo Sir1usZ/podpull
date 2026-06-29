@@ -4,7 +4,8 @@ Download a **specific podcast episode's audio** from the command line — given 
 Apple Podcasts show, a raw RSS feed, or an episode link (Apple or
 [xiaoyuzhou / 小宇宙](https://www.xiaoyuzhoufm.com)).
 
-No login, no DRM, **no third-party dependencies** (Python standard library only).
+No login, no DRM. Pick episodes from an **interactive multi-select list**, with
+spinners and progress bars so you always know what's happening.
 
 ## How it works
 
@@ -45,26 +46,39 @@ podget search "睡前故事"                 # find shows -> id, #episodes, name
 podget info  1532755821                  # show metadata (accepts URL, id, or RSS)
 podget list  1532755821                  # recent episodes, numbered (0 = newest)
 podget list  1532755821 --match "EP34"   # filter by title regex
+```
 
-# download (default output dir: ~/Downloads/Podcasts)
+### Download
+
+```bash
+# Interactive picker — just give a show; pick one or many episodes with the keyboard:
+podget get 1532755821
+#   ↑/↓ move · space toggle · a select-all · enter confirm
+
+# Or select non-interactively (also used when piping / scripting):
 podget get 1532755821 --latest 1               # newest episode
 podget get 1532755821 --match "牛頭人"          # by title regex
-podget get 1532755821 --index 0,2,5            # browse-then-pick by number
-podget get 1532755821 --match "EP34" --out ~/Audio/bedtime
+podget get 1532755821 --index 0,2,5            # by list number (0 = newest)
+podget get 1532755821 --latest 3 --out ~/Audio/bedtime
 
-# pasted episode links
+# Pasted single-episode links:
 podget get "https://www.xiaoyuzhoufm.com/episode/<id>"
 podget get "https://podcasts.apple.com/.../id<show>?i=<track>"
 ```
+
+Downloads default to `~/Downloads/Podcasts` (override with `--out`). The saved file
+path is printed to **stdout** (so you can pipe/capture it); progress and messages go
+to **stderr**. Use `--no-input` to never open the picker (fail instead) for scripts.
 
 `<src>` accepts: an Apple show URL, a bare Apple ID, a raw RSS feed URL, an Apple
 episode URL (`?i=`), or a xiaoyuzhou episode URL.
 
 ## Roadmap
 
-- **v0.1** (this release): search · info · list · download. Stdlib only.
-- **v0.2+**: nicer output (tables/progress), more robust feed parsing, tests on
-  more hosts, Podcast Index support.
+- **v0.1**: search · info · list · download (stdlib only).
+- **v0.2** (current): interactive multi-select picker, rich progress bars +
+  spinners, colored help, scriptable stdout. Adds `rich` + `questionary`.
+- **next**: more robust feed parsing, tests on more hosts, Podcast Index support.
 - **v1+ (`podget[ai]`)**: opt-in **BYOK summarization** — local transcription
   (faster-whisper) + your own LLM key (Anthropic/OpenAI). Fully local, private,
   no subscription. Cleanly isolated from the core.

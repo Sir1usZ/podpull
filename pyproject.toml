@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "podget"
-version = "0.1.0"
-description = "Download specific podcast episode audio from Apple Podcasts, RSS feeds, or xiaoyuzhou links — stdlib only."
+version = "0.2.0"
+description = "Download specific podcast episode audio from Apple Podcasts, RSS feeds, or xiaoyuzhou links — with an interactive picker."
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
@@ -18,7 +18,11 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Topic :: Multimedia :: Sound/Audio",
 ]
-dependencies = []   # stdlib only
+dependencies = [
+    "rich>=13.7",
+    "rich-argparse>=1.4",
+    "questionary>=2.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/xiaoleiy/podget"

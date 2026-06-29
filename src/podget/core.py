@@ -7,7 +7,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import sys
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -207,8 +206,12 @@ def ext_for(url: str, mime: str) -> str:
     return ".mp3"
 
 
-def download_url(url: str, dest: str, *, resume: bool = True, progress=sys.stderr) -> str:
-    """Stream a URL to dest with Range-based resume. Stdlib only."""
+def download_url(url: str, dest: str, *, resume: bool = True, on_progress=None) -> str:
+    """Stream a URL to dest with Range-based resume. Stdlib only.
+
+    on_progress, if given, is called as on_progress(downloaded_bytes, total_bytes)
+    after each chunk; total_bytes is 0 when the server doesn't report a length.
+    """
     os.makedirs(os.path.dirname(os.path.abspath(dest)), exist_ok=True)
     headers = {"User-Agent": UA}
     existing = os.path.getsize(dest) if (resume and os.path.exists(dest)) else 0
@@ -234,12 +237,8 @@ def download_url(url: str, dest: str, *, resume: bool = True, progress=sys.stder
                 break
             f.write(buf)
             done += len(buf)
-            if progress and total:
-                pct = done * 100 // total
-                progress.write(f"\r  {pct:3d}%  {done/1e6:7.1f} / {total/1e6:.1f} MB")
-                progress.flush()
-    if progress and total:
-        progress.write("\n")
+            if on_progress:
+                on_progress(done, total)
     return dest
 
 
