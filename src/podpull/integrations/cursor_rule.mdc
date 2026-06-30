@@ -1,0 +1,24 @@
+---
+description: Use the podpull CLI to download podcast episode audio (Apple Podcasts / RSS / xiaoyuzhou)
+alwaysApply: false
+---
+
+# Downloading podcast audio with podpull
+
+When the user wants to download a podcast episode's audio file, use the installed
+**`podpull`** CLI (https://github.com/xiaoleiy/podpull). Install if missing:
+`brew install xiaoleiy/tap/podpull` or `pipx install git+https://github.com/xiaoleiy/podpull`.
+
+Commands:
+- `podpull search "<keywords>"` — find a show (Apple ID, episode count).
+- `podpull list <src> [--match RE] [--all]` — list episodes; index 0 = newest.
+- `podpull get <src> --match RE | --latest N | --index 0,2` — download (alias: `pull`).
+- `podpull get <episode-url>` — a pasted Apple `?i=` or xiaoyuzhou link.
+
+`<src>` = Apple show URL · bare Apple ID · RSS feed URL · Apple episode URL · xiaoyuzhou link.
+
+Rules:
+- Always pass a selector and `--no-input`; a bare `podpull get <show>` opens an interactive picker
+  that can't be driven from the agent.
+- File path prints to stdout, progress to stderr. Default output `~/Downloads/Podcasts` (`--out` to change).
+- Multiple episodes → per-show folder; filenames are normalized to be cloud-storage-safe (CJK kept).

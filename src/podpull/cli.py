@@ -233,6 +233,64 @@ def cmd_get(args) -> int:
 
 
 # --------------------------------------------------------------------------- #
+# skills — install podpull integrations into AI coding agents
+# --------------------------------------------------------------------------- #
+def _skills_agents(args) -> "list[str] | None":
+    from . import skills
+    if getattr(args, "all", False):
+        return list(skills.AGENTS)
+    if getattr(args, "agent", None):
+        chosen = [a.strip().lower() for a in args.agent.split(",") if a.strip()]
+        bad = [a for a in chosen if a not in skills.AGENTS]
+        if bad:
+            raise ValueError(f"unknown agent(s): {', '.join(bad)} (pick from {', '.join(skills.AGENTS)})")
+        return chosen
+    return None  # -> detected only
+
+
+def cmd_skills_install(args) -> int:
+    from . import skills
+    agents = _skills_agents(args)
+    if agents is None and not skills.detect():
+        _err("no supported agents detected (Claude Code, Codex, OpenCode, Cursor). "
+             "Use --all to install for all, or --agent claude,codex,…")
+        return 1
+    results = skills.install(agents, project=getattr(args, "project", False))
+    for r in results:
+        if r.status == "installed":
+            ui.print(f"[green]✓[/] {r.label}: [dim]{r.path}[/]" + (f"  ({r.note})" if r.note else ""))
+        elif r.status == "manual":
+            ui.print(f"[yellow]●[/] {r.label}: {r.note}\n    [dim]{r.path}[/]")
+    ui.print("[dim]Re-run anytime (e.g. after an upgrade) to refresh.[/]")
+    return 0
+
+
+def cmd_skills_status(args) -> int:
+    from . import skills
+    table = Table(title="podpull agent integrations", header_style="bold")
+    table.add_column("Agent", style="cyan")
+    table.add_column("Detected")
+    table.add_column("Installed")
+    table.add_column("Path", style="dim")
+    for r in skills.status():
+        detected = "yes" if r.note == "detected" else "—"
+        installed = "[green]yes[/]" if r.status == "installed" else "no"
+        table.add_row(r.label, detected, installed, r.path or "—")
+    ui.print(table)
+    ui.print("[dim]Install/refresh:[/] podpull skills install [--all]")
+    return 0
+
+
+def cmd_skills_uninstall(args) -> int:
+    from . import skills
+    agents = _skills_agents(args) or skills.AGENTS
+    for r in (skills.uninstall_one(a, project=getattr(args, "project", False)) for a in agents):
+        mark = "[green]✓ removed[/]" if r.note == "removed" else "[dim]— not installed[/]"
+        ui.print(f"{mark}  {r.label}  [dim]{r.path}[/]")
+    return 0
+
+
+# --------------------------------------------------------------------------- #
 # parser
 # --------------------------------------------------------------------------- #
 EXAMPLES = """
@@ -281,9 +339,10 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--limit", type=int, default=40, metavar="N", help="how many recent to show (default 40)")
     s.set_defaults(func=cmd_list)
 
-    s = sub.add_parser("get", help="download episode audio", formatter_class=_Formatter,
+    s = sub.add_parser("get", aliases=["pull"], help="download episode audio (alias: pull)",
+                       formatter_class=_Formatter,
                        description="Download one or more episodes. With a show/feed and no selector, "
-                                   "opens an interactive multi-select picker.",
+                                   "opens an interactive multi-select picker. `podpull pull` is an alias.",
                        epilog=EXAMPLES)
     s.add_argument("src", help="show URL/id, RSS URL, or a single-episode link")
     g = s.add_argument_group("episode selection (omit all → interactive picker)")
@@ -295,6 +354,30 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--no-input", action="store_true",
                    help="never prompt; fail instead of opening the interactive picker")
     s.set_defaults(func=cmd_get)
+
+    sk = sub.add_parser("skills", formatter_class=_Formatter,
+                        help="set up podpull integrations for AI agents",
+                        description="Install podpull instructions into your AI coding agents so they "
+                                    "know how to use it: Claude Code & Codex (skills), OpenCode (a "
+                                    "/podpull command), and Cursor (a project rule).")
+    sk.set_defaults(func=cmd_skills_status)         # bare `podpull skills` -> status
+    sksub = sk.add_subparsers(dest="skills_cmd", metavar="<action>")
+
+    ski = sksub.add_parser("install", formatter_class=_Formatter,
+                           help="install/refresh integrations (detected agents by default)")
+    ski.add_argument("--all", action="store_true", help="install for all supported agents, not just detected")
+    ski.add_argument("--agent", metavar="LIST", help="comma list: claude,codex,opencode,cursor")
+    ski.add_argument("--project", action="store_true", help="for Cursor, write a rule into ./.cursor/rules")
+    ski.set_defaults(func=cmd_skills_install)
+
+    sksub.add_parser("status", formatter_class=_Formatter,
+                     help="show what's detected and installed").set_defaults(func=cmd_skills_status)
+
+    sku = sksub.add_parser("uninstall", formatter_class=_Formatter, help="remove installed integrations")
+    sku.add_argument("--all", action="store_true")
+    sku.add_argument("--agent", metavar="LIST", help="comma list: claude,codex,opencode,cursor")
+    sku.add_argument("--project", action="store_true", help="also remove the Cursor project rule in ./.cursor/rules")
+    sku.set_defaults(func=cmd_skills_uninstall)
     return p
 
 

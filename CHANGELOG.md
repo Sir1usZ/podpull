@@ -3,6 +3,16 @@
 All notable changes to this project are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.5.0] — 2026-06-30
+
+### Added
+- **`podpull skills install`** — sets up podpull integrations for AI coding agents in their
+  native formats: Claude Code & Codex skills (`SKILL.md`), an OpenCode `/podpull` command, and a
+  Cursor project rule. Also `podpull skills status` and `podpull skills uninstall`. Detects
+  installed agents by default; `--all` installs for every supported agent. Idempotent (re-run to
+  refresh after upgrades); nothing is written until you run it.
+- **`pull` alias** for `get` — `podpull pull …` works the same as `podpull get …`.
+
 ## [0.4.0] — 2026-06-30
 
 ### Added

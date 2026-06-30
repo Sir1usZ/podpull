@@ -40,6 +40,29 @@ Requires Python 3.9+. Optional: `yt-dlp` (deep-catalog Apple-episode fallback),
 
 > **Note:** not yet published to PyPI — install via the Homebrew tap or from git.
 
+### Set up your AI coding agents (optional)
+
+Teach your AI agents to use podpull so you can just ask them to grab an episode:
+
+```bash
+podpull skills install        # detected agents
+podpull skills install --all  # all supported agents
+podpull skills status         # see what's detected / installed
+```
+
+This writes podpull's instructions in each agent's native format:
+
+| Agent | Installed as | Location |
+|---|---|---|
+| Claude Code | skill | `~/.claude/skills/podpull/SKILL.md` |
+| Codex | skill | `~/.codex/skills/podpull/SKILL.md` |
+| OpenCode | `/podpull` command | `~/.config/opencode/commands/podpull.md` |
+| Cursor | project rule | `<project>/.cursor/rules/podpull.mdc` |
+
+Re-run after `brew upgrade` to refresh. Nothing is written until you run it.
+(Cursor has no file-based *global* rule — run it inside a project for a project rule,
+or paste the printed rule into Cursor Settings → Rules.)
+
 ## Usage
 
 ```bash
@@ -85,7 +108,8 @@ episode URL (`?i=`), or a xiaoyuzhou episode URL.
 - **v0.2**: interactive multi-select picker, rich progress bars + spinners,
   colored help, scriptable stdout. Adds `rich` + `questionary`.
 - **v0.3**: renamed `podget` → `podpull`.
-- **v0.4** (current): cloud-safe filename normalization; multi-episode downloads grouped into a per-show folder.
+- **v0.4**: cloud-safe filename normalization; multi-episode downloads grouped into a per-show folder.
+- **v0.5** (current): `pull` alias for `get`; `podpull skills install` sets up integrations for Claude Code, Codex, OpenCode, and Cursor.
 - **next**: more robust feed parsing, tests on more hosts, Podcast Index support.
 - **v1+ (`podpull[ai]`)**: opt-in **BYOK summarization** — local transcription
   (faster-whisper) + your own LLM key (Anthropic/OpenAI). Fully local, private,
