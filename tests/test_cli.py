@@ -85,3 +85,41 @@ def test_get_no_input_flag_blocks_picker(monkeypatch, tmp_path):
                                         index=None, out=str(tmp_path), no_input=True))
     assert rc == 1            # falls back to list+hint, downloads nothing
     assert got == []
+
+
+def _capture_outdirs(monkeypatch):
+    outs = []
+
+    def fake_dl(ep, out, **kw):
+        outs.append(out)
+        os.makedirs(out, exist_ok=True)
+        p = os.path.join(out, ep.title + ".mp3")
+        with open(p, "wb") as f:
+            f.write(b"x")
+        return p
+
+    monkeypatch.setattr(cli.core, "download_episode", fake_dl)
+    return outs
+
+
+def test_get_multiple_episodes_go_in_show_folder(monkeypatch, tmp_path):
+    monkeypatch.setattr(cli.core, "classify", lambda s: ("apple_show", s))
+    monkeypatch.setattr(cli, "_resolve_show", lambda kind, s: _show())  # title "Demo Show"
+    outs = _capture_outdirs(monkeypatch)
+
+    rc = cli.cmd_get(argparse.Namespace(src="123", match=None, latest=2,
+                                        index=None, out=str(tmp_path), no_input=True))
+    assert rc == 0
+    expected = os.path.join(str(tmp_path), "Demo Show")
+    assert outs == [expected, expected]          # both into the show subfolder
+
+
+def test_get_single_episode_no_folder(monkeypatch, tmp_path):
+    monkeypatch.setattr(cli.core, "classify", lambda s: ("apple_show", s))
+    monkeypatch.setattr(cli, "_resolve_show", lambda kind, s: _show())
+    outs = _capture_outdirs(monkeypatch)
+
+    rc = cli.cmd_get(argparse.Namespace(src="123", match=None, latest=1,
+                                        index=None, out=str(tmp_path), no_input=True))
+    assert rc == 0
+    assert outs == [str(tmp_path)]               # single -> straight into out dir

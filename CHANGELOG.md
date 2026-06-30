@@ -3,6 +3,19 @@
 All notable changes to this project are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [0.4.0] — 2026-06-30
+
+### Added
+- **Per-show folders**: selecting multiple episodes now saves them into a sub-folder
+  named after the show (single-episode downloads still land directly in `--out`).
+
+### Changed
+- **Cloud-safe filename normalization**: titles are NFKC-folded, emoji/other symbols
+  and control/format characters dropped, OS-forbidden and full-width characters
+  stripped, and whitespace/edges trimmed — so files upload cleanly to Drive/OneDrive/
+  Dropbox/iCloud. CJK and ordinary punctuation are preserved. Empty results fall back
+  to `untitled`; names cap at 120 chars.
+
 ## [0.3.0] — 2026-06-29
 
 ### Changed

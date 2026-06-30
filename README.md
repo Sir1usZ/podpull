@@ -71,6 +71,11 @@ Downloads default to `~/Downloads/Podcasts` (override with `--out`). The saved f
 path is printed to **stdout** (so you can pipe/capture it); progress and messages go
 to **stderr**. Use `--no-input` to never open the picker (fail instead) for scripts.
 
+**Filenames** are normalized for cloud storage — emoji and other symbols are dropped,
+full-width/illegal characters folded or stripped — so files upload cleanly to Google
+Drive, OneDrive, Dropbox, iCloud, etc. (CJK and ordinary text are kept). When you grab
+**multiple** episodes at once, they're placed in a sub-folder named after the show.
+
 `<src>` accepts: an Apple show URL, a bare Apple ID, a raw RSS feed URL, an Apple
 episode URL (`?i=`), or a xiaoyuzhou episode URL.
 
@@ -79,7 +84,8 @@ episode URL (`?i=`), or a xiaoyuzhou episode URL.
 - **v0.1**: search · info · list · download (stdlib only).
 - **v0.2**: interactive multi-select picker, rich progress bars + spinners,
   colored help, scriptable stdout. Adds `rich` + `questionary`.
-- **v0.3** (current): renamed `podget` → `podpull`.
+- **v0.3**: renamed `podget` → `podpull`.
+- **v0.4** (current): cloud-safe filename normalization; multi-episode downloads grouped into a per-show folder.
 - **next**: more robust feed parsing, tests on more hosts, Podcast Index support.
 - **v1+ (`podpull[ai]`)**: opt-in **BYOK summarization** — local transcription
   (faster-whisper) + your own LLM key (Anthropic/OpenAI). Fully local, private,

@@ -224,8 +224,12 @@ def cmd_get(args) -> int:
         _err("no episode matched your selection")
         return 1
 
-    ui.print(f"[bold]Downloading {len(sel)} episode(s)[/] from “{show.title}” → [dim]{out}[/]")
-    return 0 if _download_all(sel, out) else 1
+    # Multiple episodes -> drop them into a folder named after the show.
+    target = out
+    if len(sel) > 1:
+        target = os.path.join(out, core.safe_filename(show.title))
+    ui.print(f"[bold]Downloading {len(sel)} episode(s)[/] from “{show.title}” → [dim]{target}[/]")
+    return 0 if _download_all(sel, target) else 1
 
 
 # --------------------------------------------------------------------------- #

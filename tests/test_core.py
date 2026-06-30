@@ -16,9 +16,18 @@ def test_classify():
 
 
 def test_safe_filename():
+    # OS-forbidden characters are removed
     assert "/" not in core.safe_filename("EP1: a/b?c*d")
+    assert not set(core.safe_filename('a:b"c<d>e|f')) & set(':"<>|/\\*?')
     assert core.safe_filename("  spaced   out  ") == "spaced out"
-    assert len(core.safe_filename("x" * 500)) <= 140
+    assert len(core.safe_filename("x" * 500)) <= 120
+    # emoji & decorative symbols dropped; CJK and meaningful text kept
+    assert core.safe_filename("🎧🌍 認識 SDGs｜未來玩家探險隊") == "認識 SDGs 未來玩家探險隊"
+    assert core.safe_filename("我們家的睡前故事") == "我們家的睡前故事"
+    # full-width punctuation folded then stripped; no leading/trailing junk
+    assert core.safe_filename("：？ hello ｜") == "hello"
+    assert core.safe_filename("...   ") == "untitled"
+    assert core.safe_filename("") == "untitled"
 
 
 def test_ext_for():

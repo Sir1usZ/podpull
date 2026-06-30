@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -198,9 +199,28 @@ def select(episodes: list[Episode], *, match: str | None = None,
 # --------------------------------------------------------------------------- #
 # download
 # --------------------------------------------------------------------------- #
-def safe_filename(name: str) -> str:
-    name = re.sub(r'[\\/:*?"<>|\n\r\t]+', " ", name)
-    return re.sub(r"\s+", " ", name).strip()[:140]
+# OS-forbidden characters (Windows is the strictest) + control chars.
+_FORBIDDEN = re.compile(r'[\\/:*?"<>|\x00-\x1f]')
+# Unicode categories to drop: emoji & other symbols, modifier symbols,
+# format/control/surrogate/private-use/unassigned.
+_DROP_CATEGORIES = frozenset({"So", "Sk", "Cf", "Cc", "Cs", "Co", "Cn"})
+
+
+def safe_filename(name: str, maxlen: int = 120) -> str:
+    """Normalize a title into a cloud-/filesystem-safe name.
+
+    Folds full-width & compatibility forms (NFKC), drops emoji/symbols and
+    control/format characters, replaces OS-forbidden characters, collapses
+    whitespace, and trims leading/trailing dots, dashes and spaces. Letters
+    (including CJK), digits, spaces and ordinary punctuation are preserved so
+    files upload cleanly to Google Drive / OneDrive / Dropbox / iCloud, etc.
+    """
+    name = unicodedata.normalize("NFKC", name)
+    name = "".join(" " if unicodedata.category(c) in _DROP_CATEGORIES else c
+                   for c in name)
+    name = _FORBIDDEN.sub(" ", name)
+    name = re.sub(r"\s+", " ", name).strip(" .-_")
+    return name[:maxlen].strip(" .-_") or "untitled"
 
 
 def ext_for(url: str, mime: str) -> str:
