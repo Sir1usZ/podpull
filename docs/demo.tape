@@ -1,32 +1,30 @@
 # Demo recording for podpull.
 # Generate the GIF with:  brew install vhs && vhs docs/demo.tape
-# Produces docs/demo.gif — then embed it near the top of README.md.
+# Produces docs/demo.gif — embedded near the top of README.md.
+#
+# Flow: search -> list -> get. The `get` uses a small (~8 MB) episode so the
+# download completes quickly on screen (no long/stuck progress bar).
 
 Output docs/demo.gif
 
 Set Shell "bash"
-Set FontSize 18
-Set Width 1120
-Set Height 660
-Set Padding 20
+Set FontSize 22
+Set Width 1200
+Set Height 720
+Set Padding 22
 Set Theme "Catppuccin Mocha"
+Set TypingSpeed 30ms
 
-Type "podpull search ""睡前故事"""
+Type 'podpull search "科幻新闻早知道"'
 Enter
-Sleep 4s
-
-Type "podpull get 1532755821 --latest 1"
-Enter
-Sleep 22s      # resolve feed + download one episode (progress bar) + saved path
-
 Sleep 3s
 
-# --- Optional: show the interactive picker instead of --latest ---
-# Requires generous Sleeps so keys land after the picker renders.
-# Type "podpull get 1532755821"
-# Enter
-# Sleep 7s
-# Down@600ms 2
-# Space
-# Enter
-# Sleep 20s
+Type 'podpull list 1848022393 --match "卫星"'
+Enter
+Sleep 3s
+
+Type 'podpull get 1848022393 --latest 1 --no-input'
+Enter
+Sleep 16s      # ~8 MB download: resolve + progress bar to 100% + saved path
+
+Sleep 2s
