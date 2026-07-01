@@ -1,11 +1,14 @@
-# podpull
+<p align="center"><img src="docs/icon.png" alt="podpull" width="132"></p>
+<h1 align="center">podpull</h1>
 
-[![PyPI](https://img.shields.io/pypi/v/podpull.svg)](https://pypi.org/project/podpull/)
-[![CI](https://github.com/xiaoleiy/podpull/actions/workflows/ci.yml/badge.svg)](https://github.com/xiaoleiy/podpull/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-informational.svg)](LICENSE)
-![Platforms](https://img.shields.io/badge/platforms-macOS%20·%20Linux%20·%20Windows-lightgrey.svg)
+<p align="center">
+<a href="https://pypi.org/project/podpull/"><img src="https://img.shields.io/pypi/v/podpull.svg" alt="PyPI"></a>
+<a href="https://github.com/xiaoleiy/podpull/actions/workflows/ci.yml"><img src="https://github.com/xiaoleiy/podpull/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+<a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-informational.svg" alt="License: MIT"></a>
+<img src="https://img.shields.io/badge/platforms-macOS%20·%20Linux%20·%20Windows-lightgrey.svg" alt="Platforms">
+</p>
 
-**Download any podcast episode — Apple Podcasts, RSS, or 小宇宙/xiaoyuzhou — straight to your shell.**
+<p align="center"><b>Download any podcast episode — Apple Podcasts, RSS, or 小宇宙/xiaoyuzhou — straight to your shell.</b></p>
 
 Pick episodes from an **interactive multi-select list**, with spinners and progress bars.
 No app, no login, no DRM. Files are named cloud-safe and (for multiple picks) grouped per show.
@@ -59,6 +62,27 @@ brew install xiaoleiy/tap/podpull
 
 Requires Python 3.9+. Optional: `yt-dlp` (deep-catalog Apple-episode fallback),
 `ffmpeg`/`ffprobe` (verify downloads). Also on [PyPI](https://pypi.org/project/podpull/).
+
+### Windows
+
+Homebrew is macOS/Linux only — on Windows, install with pip/pipx (PowerShell or Windows Terminal):
+
+```powershell
+# 1) Python 3.9+ (skip if you have it):
+winget install Python.Python.3.12
+
+# 2) Recommended — isolated install via pipx:
+py -m pip install --user pipx
+py -m pipx ensurepath          # then reopen the terminal
+pipx install podpull
+
+# …or plain pip:
+py -m pip install podpull
+```
+
+Then run `podpull` in Windows Terminal or PowerShell. The interactive picker, colors, and progress
+bars work there; filenames are sanitized for Windows too (reserved names, illegal characters). If
+`podpull` isn't found after install, reopen the terminal (so `PATH` refreshes) or use `py -m podpull`.
 
 ### Set up your AI coding agents (optional)
 
