@@ -34,7 +34,7 @@ def test_install_claude_and_codex_write_skill(monkeypatch, tmp_path):
     r = skills.install_one("claude")
     assert r.status == "installed"
     p = home / ".claude" / "skills" / "podpull" / "SKILL.md"
-    assert p.is_file() and "name: podpull" in p.read_text()
+    assert p.is_file() and "name: podpull" in p.read_text(encoding="utf-8")
     r2 = skills.install_one("codex")
     assert (home / ".codex" / "skills" / "podpull" / "SKILL.md").is_file()
 
@@ -44,7 +44,7 @@ def test_install_opencode_command(monkeypatch, tmp_path):
     skills.install_one("opencode")
     # default dir is commands/ when neither exists
     p = home / ".config" / "opencode" / "commands" / "podpull.md"
-    assert p.is_file() and "description:" in p.read_text()
+    assert p.is_file() and "description:" in p.read_text(encoding="utf-8")
 
 
 def test_opencode_respects_existing_singular_dir(monkeypatch, tmp_path):
