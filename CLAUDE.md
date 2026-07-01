@@ -1,0 +1,130 @@
+# CLAUDE.md
+
+Guidance for AI coding agents (and humans) working in the **podpull** repository.
+This is the canonical agent guide; `AGENTS.md` points here.
+
+## What this is
+
+`podpull` is a small command-line tool that downloads a **specific podcast episode's
+audio** from an Apple Podcasts show/episode, a raw RSS feed, or a
+[xiaoyuzhou / 小宇宙](https://www.xiaoyuzhoufm.com) episode link.
+
+The core idea: Apple Podcasts hosts no audio — it points at each show's RSS feed, where
+every episode carries a direct `<enclosure>` URL. podpull walks that chain and downloads
+the file. No login, no DRM.
+
+Python ≥ 3.9. Published on [PyPI](https://pypi.org/project/podpull/) (`pipx install podpull`)
+and a Homebrew tap (`brew install xiaoleiy/tap/podpull`).
+
+## Layout
+
+```
+src/podpull/
+  __init__.py        # __version__ lives here
+  __main__.py        # `python -m podpull`
+  core.py            # resolve/parse/search/select/download — PURE STDLIB, no third-party imports
+  cli.py             # argparse commands + ALL UI (rich, questionary, rich-argparse)
+  skills.py          # `podpull skills` — installs agent integrations
+  integrations/      # bundled skill/command/rule files (packaged as wheel data)
+tests/               # test_core.py, test_cli.py, test_skills.py  (pytest, no network)
+docs/                # index.html (Aurora landing page), icon.svg, demo.tape/demo.gif
+.github/workflows/   # ci.yml, publish.yml (PyPI), release.yml (Homebrew tap bump)
+```
+
+## Load-bearing invariants — do NOT break these
+
+1. **`core.py` stays dependency-free.** Only the Python standard library. All third-party
+   deps (`rich`, `questionary`, `rich-argparse`) live in `cli.py`. Network/parse/download
+   logic is pure stdlib so it's easy to test and audit. If you need a UI concern in core,
+   pass a callback (see `download_url(..., on_progress=…)`) rather than importing rich.
+2. **stdout = machine output, stderr = humans.** Downloaded file paths print to **stdout**;
+   spinners, tables, progress bars, and messages go to **stderr** (rich `Console(stderr=True)`).
+   Keep it that way — people pipe/capture stdout.
+3. **Interactive picker vs. scripting.** `podpull get <show>` with no selector opens the
+   `questionary` multi-select picker *only* when stdin+stderr are a TTY and `--no-input`
+   isn't set; otherwise it prints a listing + hint and exits non-zero (never hangs).
+4. **Cloud-/Windows-safe filenames.** `core.safe_filename` NFKC-folds, drops emoji/symbols
+   and control chars, strips OS-forbidden + full-width chars, trims edges, caps at 120, and
+   avoids Windows reserved device names (`CON`, `NUL`, …). Preserve this when touching naming.
+5. **Browser User-Agent.** `core.UA` is a plain browser UA on purpose — xiaoyuzhou's CDN
+   (`feed.xyzfm.space`) returns 403 to identifiable tool UAs. Don't "brand" it back.
+6. **All text file I/O is explicit `encoding="utf-8"`.** Windows defaults to cp1252 and will
+   raise on CJK otherwise (audio writes are binary — that's fine).
+7. **Multiple episodes → a per-show sub-folder** (`<out>/<show name>/`); a single episode
+   lands directly in `--out`.
+
+## Dev workflow
+
+```bash
+python3 -m venv .venv && . .venv/bin/activate
+pip install -e ".[dev]"      # editable + pytest
+pytest -q                    # all tests; must stay green
+ruff check src               # lint (line-length 100, target py39)
+podpull --help               # try it
+```
+
+- **Tests are offline.** `test_core` covers pure logic; `test_cli` mocks `core`/`questionary`
+  and captures behavior; `test_skills` installs into a temp `$HOME`. Add/adjust tests for any
+  change — never add a test that hits the network in the default suite.
+- Follow existing style: type hints, small focused functions, stdlib in `core`, rich in `cli`.
+
+## Agent integrations (`podpull skills`)
+
+`podpull skills install` writes podpull's usage instructions into each detected AI agent in
+its native format, from `src/podpull/integrations/`:
+
+| Agent | File | Installs to |
+|---|---|---|
+| Claude Code / Codex | `SKILL.md` (shared) | `~/.claude/skills/podpull/` · `~/.codex/skills/podpull/` |
+| OpenCode | `opencode_command.md` | `~/.config/opencode/command(s)/podpull.md` |
+| Cursor | `cursor_rule.mdc` | `<project>/.cursor/rules/` (no file-based global rule in Cursor) |
+
+**If you change the CLI's commands/flags/UX, update these bundled files too** so agents keep
+giving correct instructions. They're packaged as wheel data (see `pyproject.toml`) — verify
+with `python -m build` that they end up in the wheel.
+
+## Releasing
+
+Releases are automated from a version tag. To cut one:
+
+1. Bump the version in **both** `src/podpull/__init__.py` and `pyproject.toml` (keep them in sync).
+2. Add a `CHANGELOG.md` entry.
+3. Commit, then:
+   ```bash
+   git tag vX.Y.Z && git push origin main --tags
+   ```
+   Pushing the tag triggers:
+   - **`publish.yml`** → builds + publishes to PyPI (needs repo secret `PYPI_API_TOKEN`).
+   - **`release.yml`** → recomputes the source-tarball `sha256` and rewrites the `url`+`sha256`
+     in `Formula/podpull.rb` of the **`xiaoleiy/homebrew-tap`** repo (needs `TAP_GITHUB_TOKEN`).
+
+- **Dependency changes** are the one manual step: the tap formula vendors deps as `resource`
+  blocks. After changing `dependencies`, run
+  `brew update-python-resources xiaoleiy/tap/podpull` and commit the updated resources to the
+  tap (the tag workflow only rewrites `url`/`sha256`, not resources).
+- The `podpull` command's `test do` block in the tap formula asserts `podpull --version` — keep
+  the command name in sync if it ever changes.
+
+## Docs & assets
+
+- **Landing page:** `docs/index.html` (Aurora theme) is served via GitHub Pages from `main` `/docs`
+  at https://xiaoleiy.github.io/podpull/. `docs/icon.svg` is the master app icon; re-render PNGs
+  with `rsvg-convert -w N -h N docs/icon.svg`.
+- **Demo GIF:** `docs/demo.tape` is a [vhs](https://github.com/charmbracelet/vhs) script;
+  regenerate `docs/demo.gif` with `vhs docs/demo.tape`. Keep the demo's `get` step pointed at a
+  small episode so the recording stays short.
+- **README** must keep install (`pipx`/`brew`/Windows) and the feature list accurate.
+
+## CI & platforms
+
+`ci.yml` runs `pytest` on **ubuntu / windows / macos** across Python 3.11 & 3.13 (plus 3.9 on
+ubuntu). Keep it green on all three OSes — Windows especially (path/encoding/reserved-name edges).
+
+## Gotchas
+
+- Editing anything in `.github/workflows/` triggers a security-reminder hook; the workflows use
+  only controlled inputs (`matrix.*`, `secrets.*`, tag refs via env) — it's advisory, retry the write.
+- The version lives in **two** files (`__init__.py` + `pyproject.toml`) — bump both.
+- Don't commit build artifacts or downloaded media (`dist/`, `build/`, `*.mp3`, `*.m4a`, `.venv/`
+  are gitignored).
+- GitHub username/owner is **`xiaoleiy`**; commits use the personal identity (`yuleibest@gmail.com`).
