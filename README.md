@@ -1,13 +1,29 @@
 # podpull
 
-Download a **specific podcast episode's audio** from the command line — given an
-Apple Podcasts show, a raw RSS feed, or an episode link (Apple or
-[xiaoyuzhou / 小宇宙](https://www.xiaoyuzhoufm.com)).
+[![CI](https://github.com/xiaoleiy/podpull/actions/workflows/ci.yml/badge.svg)](https://github.com/xiaoleiy/podpull/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-informational.svg)](LICENSE)
+![Platforms](https://img.shields.io/badge/platforms-macOS%20·%20Linux%20·%20Windows-lightgrey.svg)
 
-No login, no DRM. Pick episodes from an **interactive multi-select list**, with
-spinners and progress bars so you always know what's happening.
+**Download any podcast episode — Apple Podcasts, RSS, or 小宇宙/xiaoyuzhou — straight to your shell.**
 
-**Website:** https://xiaoleiy.github.io/podpull
+Pick episodes from an **interactive multi-select list**, with spinners and progress bars.
+No app, no login, no DRM. Files are named cloud-safe and (for multiple picks) grouped per show.
+
+**▶ Live animated demo & landing page:** https://xiaoleiy.github.io/podpull
+
+## Demo
+
+```text
+$ podpull get 1532755821
+✓ 我們家的睡前故事 — 394 episodes
+? Select episodes  (↑/↓ · space · enter)
+❯ ◉ 2026-06-23  EP343 迷宮中的牛頭人
+  ◯ 2026-06-16  EP342 午睡任務
+  ◉ 2026-06-09  EP341 修煉龍 4
+██████████████████  100%  21.2 MB  •  saved to ~/Downloads/Podcasts/我們家的睡前故事/
+```
+
+<!-- Animated GIF: `brew install vhs` then `vhs docs/demo.tape` -> docs/demo.gif, then embed here. -->
 
 ## How it works
 
