@@ -14,6 +14,12 @@ No app, no login, no DRM. Files are named cloud-safe and (for multiple picks) gr
 
 ## Demo
 
+<p align="center">
+  <img src="docs/demo.gif" alt="podpull: search a show, pick episodes, download with a progress bar" width="820">
+</p>
+
+<details><summary>text version</summary>
+
 ```text
 $ podpull get 1532755821
 ✓ 我們家的睡前故事 — 394 episodes
@@ -23,8 +29,7 @@ $ podpull get 1532755821
   ◉ 2026-06-09  EP341 修煉龍 4
 ██████████████████  100%  21.2 MB  •  saved to ~/Downloads/Podcasts/我們家的睡前故事/
 ```
-
-<!-- Animated GIF: `brew install vhs` then `vhs docs/demo.tape` -> docs/demo.gif, then embed here. -->
+</details>
 
 ## How it works
 
