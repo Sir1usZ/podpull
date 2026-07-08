@@ -66,11 +66,12 @@ def _resolve_show(kind: str, s: str, args) -> core.Show:
 def _download_all(episodes: list[core.Episode], out_dir: str, args) -> int:
     """Download episodes with a live per-file progress bar."""
     n = 0
+    threads = getattr(args, "threads", 1)
     if args.quiet:
         # quiet mode: no progress bar
         for ep in episodes:
             try:
-                path = core.download_episode(ep, out_dir)
+                path = core.download_episode(ep, out_dir, threads=threads)
             except Exception as e:
                 _err(f"{ep.title[:50]}: {e}")
                 continue
@@ -90,19 +91,23 @@ def _download_all(episodes: list[core.Episode], out_dir: str, args) -> int:
             transient=True,
         ) as progress:
             for ep in episodes:
-                task = progress.add_task("dl", label=ep.title[:34] or "episode", total=None)
+                label = ep.title[:34] or "episode"
+                if threads > 1:
+                    label = f"[{threads}x] {label}"
+                task = progress.add_task("dl", label=label, total=None)
 
                 def cb(done: int, total: int, _t=task) -> None:
                     progress.update(_t, completed=done, total=(total or None))
 
                 try:
-                    path = core.download_episode(ep, out_dir, on_progress=cb)
+                    path = core.download_episode(ep, out_dir, on_progress=cb, threads=threads)
                 except Exception as e:      # keep going on a single failure
                     progress.console.print(f"[red]✗[/] {ep.title[:50]}: {e}")
                     continue
                 progress.remove_task(task)
                 size = os.path.getsize(path)
-                ui.print(f"[green]✓[/] {ep.date}  {ep.title[:50]}  [dim]({size/1e6:.1f} MB)[/]")
+                thread_tag = f"  [dim cyan][{threads}t][/]" if threads > 1 else ""
+                ui.print(f"[green]✓[/] {ep.date}  {ep.title[:50]}  [dim]({size/1e6:.1f} MB){thread_tag}[/]")
                 print(path)                 # stdout: the saved file path
                 n += 1
 
@@ -234,6 +239,7 @@ def _interactive_select(show: core.Show) -> list[core.Episode]:
 def cmd_get(args) -> int:
     kind, s = core.classify(args.src)
     out = args.out
+    threads = getattr(args, "threads", 1)
 
     # --- pasted episode links: download immediately ----------------------- #
     if kind == "xyz_episode":
@@ -247,10 +253,10 @@ def cmd_get(args) -> int:
 
     if kind == "apple_episode":
         if args.quiet:
-            url, title, rel = core.apple_episode_to_audio(s)
+            url, title, rel, mime = core.apple_episode_to_audio(s)
         else:
             with ui.status("[cyan]Resolving Apple episode…"):
-                url, title, rel = core.apple_episode_to_audio(s)
+                url, title, rel, mime = core.apple_episode_to_audio(s)
         if not url:
             _err("episode beyond recent catalog; trying yt-dlp")
             return _ytdlp_fallback(s, out)
@@ -260,7 +266,7 @@ def cmd_get(args) -> int:
         except Exception:
             pub = ""
         return 0 if _download_all([core.Episode(title=title or "episode", pub=pub,
-                                                url=url)], out, args) else 1
+                                                url=url, mime=mime)], out, args) else 1
 
     # --- show / rss: select then download --------------------------------- #
     show = _resolve_show(kind, s, args)
@@ -288,7 +294,8 @@ def cmd_get(args) -> int:
     if len(sel) > 1:
         target = os.path.join(out, core.safe_filename(show.title))
     if not args.quiet:
-        ui.print(f"[bold]Downloading {len(sel)} episode(s)[/] from “{show.title}” → [dim]{target}[/]")
+        thread_info = f"  [dim cyan][{threads} threads][/]" if threads > 1 else ""
+        ui.print(f"[bold]Downloading {len(sel)} episode(s)[/] from “{show.title}” → [dim]{target}[/]{thread_info}")
     return 0 if _download_all(sel, target, args) else 1
 
 
@@ -415,6 +422,9 @@ def build_parser() -> argparse.ArgumentParser:
     g.add_argument("--index", metavar="N[,N]", help="0-based list indices (0 = newest)")
     s.add_argument("--out", default=DEFAULT_OUT, metavar="DIR",
                    help=f"output directory (default: {DEFAULT_OUT})")
+    s.add_argument("--threads", type=int, default=1, metavar="N",
+                   help="multi-threaded segmented download (e.g. 8); falls back to 1 if server "
+                        "doesn't support Range or file is < 2 MB")
     s.add_argument("--no-input", action="store_true",
                    help="never prompt; fail instead of opening the interactive picker")
     s.set_defaults(func=cmd_get)

@@ -4,11 +4,13 @@ No third-party dependencies — only the Python standard library.
 """
 from __future__ import annotations
 
+import concurrent.futures
 import hashlib
 import html.entities
 import json
 import os
 import re
+import threading
 import time
 import unicodedata
 import urllib.error
@@ -357,10 +359,14 @@ def xyz_episode_to_audio(src: str) -> tuple[str, str]:
     return m.group(1), (t.group(1).strip() if t else "episode")
 
 
-def apple_episode_to_audio(src: str) -> tuple[str | None, str | None, str | None]:
+def apple_episode_to_audio(
+    src: str,
+) -> tuple[str | None, str | None, str | None, str]:
     """Resolve .../id<show>?i=<trackId> via the show's episode list.
-    Returns (url, title, releaseDate) or (None, None, None) to signal a
-    deep-catalog miss (caller may fall back to yt-dlp)."""
+    Returns (url, title, releaseDate, mime) or (None, None, None, "") to signal a
+    deep-catalog miss (caller may fall back to yt-dlp). `mime` is derived from
+    Apple's episodeContentType/episodeFileExtension so the saved file gets the
+    right extension even when episodeUrl is an extension-less redirect."""
     show_m = re.search(r"/id(\d+)", src)
     track_m = re.search(r"[?&]i=(\d+)", src)
     if show_m and track_m:
@@ -368,8 +374,18 @@ def apple_episode_to_audio(src: str) -> tuple[str | None, str | None, str | None
             {"id": show_m.group(1), "entity": "podcastEpisode", "limit": 200})
         for r in fetch_json(f"{ITUNES_LOOKUP}?{q}").get("results", []):
             if str(r.get("trackId")) == track_m.group(1) and r.get("episodeUrl"):
-                return r["episodeUrl"], (r.get("trackName") or "").strip(), r.get("releaseDate")
-    return None, None, None
+                ext = (r.get("episodeFileExtension") or "").lower()
+                ctype = (r.get("episodeContentType") or "").lower()
+                # Map Apple's hints onto a mime string ext_for() understands.
+                if ext in ("m4a", "mp4", "aac") or "mp4" in ctype:
+                    mime = "audio/mp4"
+                elif ext == "mp3" or "mpeg" in ctype:
+                    mime = "audio/mpeg"
+                else:
+                    mime = ctype or ""
+                return (r["episodeUrl"], (r.get("trackName") or "").strip(),
+                        r.get("releaseDate"), mime)
+    return None, None, None, ""
 
 
 # --------------------------------------------------------------------------- #
@@ -429,13 +445,265 @@ def ext_for(url: str, mime: str) -> str:
     return ".mp3"
 
 
-def download_url(url: str, dest: str, *, resume: bool = True, on_progress=None) -> str:
+# 1 MiB read buffer — fewer syscalls than 256 KiB, meaningfully faster on fast links.
+_BUF_SIZE = 1024 * 1024
+_PROGRESS_INTERVAL = 1024 * 1024
+# Segment sizing: don't split unless it actually pays off.
+_MIN_SEGMENT = 4 * 1024 * 1024
+_MAX_THREADS = 16
+# A tiny (1-byte) Range GET is enough to learn "Range supported?" + total size.
+_PROBE_SIZE = 1
+
+
+def _probe_url(url: str) -> int:
+    """Probe total size. Tries HEAD first; if the CDN rejects HEAD (403/405 —
+    common on podcast CDNs), falls back to a 1-byte Range GET so we still learn
+    the size instead of giving up (which would force a needless full re-download).
+    Returns content_length (0 if unknown)."""
+    req = urllib.request.Request(url, headers={"User-Agent": UA}, method="HEAD")
+    try:
+        resp = urllib.request.urlopen(req, timeout=15)
+        cl = resp.headers.get("Content-Length")
+        resp.close()
+        if cl:
+            return int(cl)
+    except Exception:
+        pass
+    # HEAD unavailable/blocked or no length -> derive size from a 1-byte Range GET.
+    ok, total = _probe_range_and_size(url)
+    return total if ok else 0
+
+
+def _parse_content_range_total(cr: str) -> int:
+    """Extract total size from a Content-Range header like 'bytes 0-8191/1234567'."""
+    m = re.search(r"/(\d+)$", cr or "")
+    return int(m.group(1)) if m else 0
+
+
+def _probe_range_and_size(url: str) -> tuple[bool, int]:
+    """Probe Range support + total size with one small GET (256KB).
+
+    Returns (range_supported, total_size).
+    """
+    headers = {"User-Agent": UA, "Range": f"bytes=0-{_PROBE_SIZE - 1}"}
+    req = urllib.request.Request(url, headers=headers)
+    try:
+        resp = urllib.request.urlopen(req, timeout=15)
+    except Exception:
+        return False, 0
+    status = getattr(resp, "status", 200)
+    resp.read()
+    resp.close()
+    if status != 206:
+        return False, 0
+    total = _parse_content_range_total(resp.headers.get("Content-Range", ""))
+    return True, total
+
+
+def _download_range_with_progress(url: str, dest: str, start: int, end: int,
+                                  progress_list: list, progress_lock: threading.Lock,
+                                  index: int, total_size: int, on_progress=None,
+                                  resume: bool = True) -> None:
+    """Download exactly bytes [start, end] into `dest` (one segment).
+
+    Enforces the exact segment length: raises IOError on a short read so a
+    truncated segment surfaces as a failure instead of being silently merged
+    into a corrupt file. Only resumes a partial `dest` when `resume` is True;
+    the caller guarantees `dest` was left over from an identical segment plan.
+    """
+    seg_len = end - start + 1
+    existing = os.path.getsize(dest) if (resume and os.path.exists(dest)) else 0
+    if existing >= seg_len:
+        # This segment is already fully present (resume of a matching plan).
+        with progress_lock:
+            progress_list[index] = seg_len
+            total_done = sum(progress_list)
+        if on_progress:
+            on_progress(total_done, total_size)
+        return
+    if not resume and os.path.exists(dest):
+        os.remove(dest)
+        existing = 0
+
+    headers = {"User-Agent": UA, "Range": f"bytes={start + existing}-{end}"}
+    req = urllib.request.Request(url, headers=headers)
+    try:
+        resp = urllib.request.urlopen(req, timeout=60)
+    except urllib.error.HTTPError as e:
+        if e.code == 416:  # already satisfied
+            with progress_lock:
+                progress_list[index] = seg_len
+            return
+        raise
+
+    mode = "ab" if existing else "wb"
+    written = existing
+    last_report = 0
+    try:
+        with open(dest, mode) as f:
+            while True:
+                buf = resp.read(_BUF_SIZE)
+                if not buf:
+                    break
+                f.write(buf)
+                written += len(buf)
+                if written - last_report >= _PROGRESS_INTERVAL:
+                    last_report = written
+                    with progress_lock:
+                        progress_list[index] = written
+                        total_done = sum(progress_list)
+                    if on_progress:
+                        on_progress(total_done, total_size)
+    finally:
+        resp.close()
+
+    if written != seg_len:
+        raise IOError(
+            f"segment {index} short read: got {written} bytes, expected {seg_len} "
+            f"(server closed early?)"
+        )
+    with progress_lock:
+        progress_list[index] = written
+        total_done = sum(progress_list)
+    if on_progress:
+        on_progress(total_done, total_size)
+
+
+def _cleanup_parts(part_files: list[str], plan_path: str | None = None) -> None:
+    """Remove any leftover part files (and an optional plan sidecar)."""
+    for pf in part_files:
+        try:
+            os.remove(pf)
+        except OSError:
+            pass
+    if plan_path:
+        try:
+            os.remove(plan_path)
+        except OSError:
+            pass
+
+
+def _merge_parts(part_files: list[str], dest: str,
+                 expected_total: int | None = None) -> None:
+    """Merge part files in order into dest, then remove part files.
+
+    If `expected_total` is given, verifies the merged size matches; on mismatch
+    the corrupt output is removed and IOError is raised so a truncated/misaligned
+    download never masquerades as a finished file.
+    """
+    written = 0
+    with open(dest, "wb") as out:
+        for pf in part_files:
+            with open(pf, "rb") as f:
+                while True:
+                    buf = f.read(8 * 1024 * 1024)
+                    if not buf:
+                        break
+                    out.write(buf)
+                    written += len(buf)
+    if expected_total is not None and written != expected_total:
+        try:
+            os.remove(dest)
+        except OSError:
+            pass
+        raise IOError(
+            f"merged size {written} != expected {expected_total}; download corrupt"
+        )
+    for pf in part_files:
+        try:
+            os.remove(pf)
+        except OSError:
+            pass
+
+
+def download_url(url: str, dest: str, *, resume: bool = True, on_progress=None,
+                 threads: int = 1) -> str:
     """Stream a URL to dest with Range-based resume. Stdlib only.
 
     on_progress, if given, is called as on_progress(downloaded_bytes, total_bytes)
     after each chunk; total_bytes is 0 when the server doesn't report a length.
+
+    threads > 1 enables multi-threaded segmented download. Falls back to single
+    thread if the server doesn't support Range or the file is too small.
     """
     os.makedirs(os.path.dirname(os.path.abspath(dest)), exist_ok=True)
+
+    if threads <= 1:
+        return _download_url_single(url, dest, resume=resume, on_progress=on_progress)
+
+    if os.path.exists(dest) and resume:
+        existing_size = os.path.getsize(dest)
+        if existing_size > 0:
+            cl = _probe_url(url)
+            if cl > 0 and existing_size >= cl:
+                if on_progress:
+                    on_progress(cl, cl)
+                return dest
+
+    range_ok, total_size = _probe_range_and_size(url)
+    if not range_ok or total_size < _MIN_SEGMENT * 2:
+        return _download_url_single(url, dest, resume=resume, on_progress=on_progress)
+
+    n_threads = min(threads, _MAX_THREADS, max(2, total_size // _MIN_SEGMENT))
+    part_size = total_size // n_threads
+
+    part_files = [f"{dest}.part{i}" for i in range(n_threads)]
+    plan_path = f"{dest}.plan"
+
+    # Resume is only safe if the leftover parts came from an *identical* segment
+    # plan (same total size + thread count). Otherwise the byte ranges differ and
+    # resuming would splice mismatched data into a corrupt file. The plan sidecar
+    # records the plan; a mismatch (or --no-resume) means start clean.
+    plan_key = f"{total_size}:{n_threads}"
+    can_resume = False
+    if resume and os.path.exists(plan_path):
+        try:
+            with open(plan_path, "r", encoding="utf-8") as f:
+                can_resume = f.read().strip() == plan_key
+        except OSError:
+            can_resume = False
+    if not can_resume:
+        _cleanup_parts(part_files, plan_path)
+    try:
+        with open(plan_path, "w", encoding="utf-8") as f:
+            f.write(plan_key)
+    except OSError:
+        pass
+
+    progress_list = [0] * n_threads
+    progress_lock = threading.Lock()
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=n_threads) as executor:
+        futures = []
+        for i in range(n_threads):
+            seg_start = i * part_size
+            seg_end = total_size - 1 if i == n_threads - 1 else (i + 1) * part_size - 1
+            futures.append(executor.submit(
+                _download_range_with_progress, url, part_files[i], seg_start, seg_end,
+                progress_list, progress_lock, i, total_size, on_progress, can_resume
+            ))
+        # On a segment failure we KEEP the good parts + plan sidecar: the next run
+        # with the same plan safely resumes them (the plan guard prevents reusing
+        # misaligned parts). Only a merge-size mismatch — which means the parts are
+        # inconsistent — triggers a full cleanup below.
+        for fut in concurrent.futures.as_completed(futures):
+            fut.result()
+
+    try:
+        _merge_parts(part_files, dest, expected_total=total_size)
+    except Exception:
+        _cleanup_parts(part_files, plan_path)
+        raise
+
+    _cleanup_parts([], plan_path)
+    if on_progress:
+        on_progress(total_size, total_size)
+    return dest
+
+
+def _download_url_single(url: str, dest: str, *, resume: bool = True,
+                         on_progress=None) -> str:
+    """Single-threaded download (original implementation)."""
     headers = {"User-Agent": UA}
     existing = os.path.getsize(dest) if (resume and os.path.exists(dest)) else 0
     if existing:
@@ -444,29 +712,32 @@ def download_url(url: str, dest: str, *, resume: bool = True, on_progress=None) 
     try:
         resp = urllib.request.urlopen(req, timeout=60)
     except urllib.error.HTTPError as e:
-        if e.code == 416:           # range not satisfiable -> already complete
+        if e.code == 416:
             return dest
         raise
-    if existing and getattr(resp, "status", 200) == 200:
-        existing = 0                # server ignored Range; restart cleanly
-    ctype = (resp.headers.get("Content-Type") or "").split(";")[0].strip().lower()
-    if ctype.startswith("text/"):
-        # e.g. Ximalaya's CDN answers a stale enclosure query with 200 text/plain
-        raise ValueError(f"server returned {ctype}, not audio — "
-                         "the feed's enclosure URL may be stale")
-    mode = "ab" if existing else "wb"
-    remaining = resp.length or 0
-    total = (remaining + existing) if remaining else 0
-    done = existing
-    with open(dest, mode) as f:
-        while True:
-            buf = resp.read(1 << 16)
-            if not buf:
-                break
-            f.write(buf)
-            done += len(buf)
-            if on_progress:
-                on_progress(done, total)
+    try:
+        if existing and getattr(resp, "status", 200) == 200:
+            existing = 0                # server ignored Range; restart cleanly
+        ctype = (resp.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+        if ctype.startswith("text/"):
+            # e.g. Ximalaya's CDN answers a stale enclosure query with 200 text/plain
+            raise ValueError(f"server returned {ctype}, not audio — "
+                             "the feed's enclosure URL may be stale")
+        mode = "ab" if existing else "wb"
+        remaining = resp.length or 0
+        total = (remaining + existing) if remaining else 0
+        done = existing
+        with open(dest, mode) as f:
+            while True:
+                buf = resp.read(_BUF_SIZE)
+                if not buf:
+                    break
+                f.write(buf)
+                done += len(buf)
+                if on_progress:
+                    on_progress(done, total)
+    finally:
+        resp.close()
     return dest
 
 
