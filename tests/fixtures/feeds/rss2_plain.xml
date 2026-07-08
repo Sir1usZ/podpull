@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <channel>
+    <title>Plain RSS2 Show</title>
+    <itunes:author>Plain Author</itunes:author>
+    <item>
+      <title>EP2</title>
+      <pubDate>Fri, 03 Jul 2026 08:00:00 GMT</pubDate>
+      <guid>plain-ep2</guid>
+      <link>https://example.test/ep2</link>
+      <enclosure url="https://cdn.example.test/ep2.mp3" type="audio/mpeg" length="1"/>
+    </item>
+    <item>
+      <title>EP1</title>
+      <pubDate>Wed, 01 Jul 2026 08:00:00 GMT</pubDate>
+      <guid>plain-ep1</guid>
+      <enclosure url="https://cdn.example.test/ep1.mp3" type="audio/mpeg" length="1"/>
+    </item>
+  </channel>
+</rss>

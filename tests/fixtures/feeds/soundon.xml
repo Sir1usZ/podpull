@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"
+     xmlns:soundon="https://soundon.fm/rss">
+  <channel>
+    <title>股癌</title>
+    <itunes:author>謝孟恭</itunes:author>
+    <itunes:new-feed-url>https://feeds.soundon.fm/podcasts/954689a5-3096-43a4-a80b-7810b219cef3.xml</itunes:new-feed-url>
+    <soundon:podcastId>954689a5-3096-43a4-a80b-7810b219cef3</soundon:podcastId>
+    <item>
+      <title>EP560 | 台股創高</title>
+      <pubDate>Sun, 05 Jul 2026 10:00:00 +0800</pubDate>
+      <guid>soundon-560</guid>
+      <enclosure url="https://rss.soundon.fm/rssf/954689a5/ep560/rssFileVip.mp3?times=1751700000" type="audio/mpeg" length="6"/>
+    </item>
+  </channel>
+</rss>

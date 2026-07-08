@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "podpull"
-version = "0.5.1"
+version = "0.6.0"
 description = "Download specific podcast episode audio from Apple Podcasts, RSS feeds, or xiaoyuzhou links — with an interactive picker."
 readme = "README.md"
 requires-python = ">=3.9"
@@ -40,3 +40,9 @@ packages = ["src/podpull"]
 [tool.ruff]
 line-length = 100
 target-version = "py39"
+
+[tool.pytest.ini_options]
+markers = [
+    "network: hits live podcast hosts; excluded by default (run: pytest -m network)",
+]
+addopts = "-m 'not network'"

@@ -144,7 +144,21 @@ Drive, OneDrive, Dropbox, iCloud, etc. (CJK and ordinary text are kept). When yo
 **multiple** episodes at once, they're placed in a sub-folder named after the show.
 
 `<src>` accepts: an Apple show URL, a bare Apple ID, a raw RSS feed URL, an Apple
-episode URL (`?i=`), or a xiaoyuzhou episode URL.
+episode URL (`?i=`), a xiaoyuzhou episode URL, or a Ximalaya album URL
+(`ximalaya.com/album/<id>`).
+
+### Podcast Index (optional)
+
+podpull can enrich `search` and feed resolution with the open
+[Podcast Index](https://podcastindex.org) directory. Get a free API key at
+[api.podcastindex.org](https://api.podcastindex.org/signup) and set:
+
+```bash
+export PODCASTINDEX_API_KEY=...
+export PODCASTINDEX_API_SECRET=...
+```
+
+Without these, podpull behaves exactly as before (iTunes only).
 
 ## Roadmap
 
@@ -153,8 +167,11 @@ episode URL (`?i=`), or a xiaoyuzhou episode URL.
   colored help, scriptable stdout. Adds `rich` + `questionary`.
 - **v0.3**: renamed `podget` → `podpull`.
 - **v0.4**: cloud-safe filename normalization; multi-episode downloads grouped into a per-show folder.
-- **v0.5** (current): `pull` alias for `get`; `podpull skills install` sets up integrations for Claude Code, Codex, OpenCode, and Cursor.
-- **next**: more robust feed parsing, tests on more hosts, Podcast Index support.
+- **v0.5**: `pull` alias for `get`; `podpull skills install` sets up integrations for Claude Code, Codex, OpenCode, and Cursor.
+- **v0.6** (current): robust feed parsing (RSS 2.0 / RSS 1.0 / Atom, dirty-XML recovery),
+  verified against Chinese-market hosts, `ximalaya.com/album/<id>` links, optional
+  Podcast Index (BYOK) search + feed-resolution fallback.
+- **next**: `--json` output mode for scripting.
 - **v1+ (`podpull[ai]`)**: opt-in **BYOK summarization** — local transcription
   (faster-whisper) + your own LLM key (Anthropic/OpenAI). Fully local, private,
   no subscription. Cleanly isolated from the core.

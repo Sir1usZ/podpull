@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <channel>
+    <title><![CDATA[百靈果 News]]></title>
+    <language><![CDATA[zh-Hant]]></language>
+    <pubDate>Mon, 01 Dec 2025 00:00:00 +0000</pubDate>
+    <itunes:author><![CDATA[百靈果 News]]></itunes:author>
+    <item>
+      <title><![CDATA[EP500 國際新聞]]></title>
+      <pubDate><![CDATA[Sat, 04 Jul 2026 01:00:00 +0000]]></pubDate>
+      <guid><![CDATA[firstory-500]]></guid>
+      <enclosure url="https://m.cdn.firstory.me/track/cmjaz594i/https%3A%2F%2Ffile.cdn.firstory.me%2Fstory%2Fep500.mp3" type="audio/mpeg" length="7"/>
+    </item>
+  </channel>
+</rss>
