@@ -25,6 +25,10 @@ FEED_CASES = [
      "https://tk.wavpub.com/track/caffebreve/91.m4a", "2026-07-01"),
     ("omny.xml", "馬力歐陪你喝一杯", "鏡好聽", 1,
      "https://omny.example.test/ep388.mp3", "2026-06-30"),
+    ("dirty_entities.xml", "Dirty Show", "Dirty & Sons", 1,
+     "https://cdn.example.test/dirty1.mp3?a=1&b=2", "2026-06-29"),
+    ("utf16_bom.xml", "UTF16 Show", "", 1,
+     "https://cdn.example.test/u16.mp3", "2026-06-28"),
 ]
 
 
@@ -44,6 +48,12 @@ def test_parse_feed_fixture(monkeypatch, fname, title, author, count, first_url,
     assert eps[0].date == first_date
     if fname == "itunes_title_order.xml":
         assert eps[0].title == "Real Episode Title"
+
+
+def test_parse_feed_hopeless_xml_raises(monkeypatch):
+    monkeypatch.setattr(core, "fetch", lambda url, timeout=45: io.BytesIO(b"<rss><channel>"))
+    with pytest.raises(core.ET.ParseError):
+        core.parse_feed("https://example.test/feed")
 
 
 def test_classify():

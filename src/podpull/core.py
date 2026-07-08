@@ -4,6 +4,7 @@ No third-party dependencies — only the Python standard library.
 """
 from __future__ import annotations
 
+import html.entities
 import json
 import os
 import re
@@ -193,10 +194,48 @@ def _item_link(item) -> str:
     return ""
 
 
+_XML_PREDEFINED = frozenset({"amp", "lt", "gt", "quot", "apos"})
+
+
+def _sanitize_xml(raw: bytes) -> bytes:
+    """Best-effort repair of common real-world feed dirt: junk before the
+    declaration, control chars, undefined HTML entities, bare '&'."""
+    m = re.search(rb'<\?xml[^>]*encoding=["\']([A-Za-z0-9._-]+)["\']', raw[:200])
+    enc = m.group(1).decode("ascii", "replace") if m else "utf-8"
+    try:
+        text = raw.decode(enc, "replace")
+    except LookupError:                     # unknown codec name in declaration
+        text = raw.decode("utf-8", "replace")
+    text = text.lstrip("\ufeff\x00 \t\r\n")
+    # we re-encode as UTF-8 below, so the declared encoding must not disagree
+    text = re.sub(r'(<\?xml[^>]*?)\s+encoding=["\'][^"\']*["\']', r"\1", text, count=1)
+    text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", text)
+
+    def _entity(mm):
+        name = mm.group(1)
+        if name in _XML_PREDEFINED:
+            return mm.group(0)
+        ch = html.entities.html5.get(name + ";")
+        return "".join(f"&#{ord(c)};" for c in ch) if ch else ""
+    text = re.sub(r"&([A-Za-z][A-Za-z0-9]{1,31});", _entity, text)
+    text = re.sub(r"&(?![A-Za-z][A-Za-z0-9]{1,31};|#\d+;|#x[0-9A-Fa-f]+;)", "&amp;", text)
+    return text.encode("utf-8")
+
+
+def _parse_xml(raw: bytes) -> "ET.Element":
+    try:
+        return ET.fromstring(raw)
+    except ET.ParseError as err:
+        try:
+            return ET.fromstring(_sanitize_xml(raw))
+        except ET.ParseError:
+            raise err from None             # fail loudly with the original error
+
+
 def parse_feed(feed_url: str) -> tuple[str, str, list[Episode]]:
     """-> (show_title, show_author, episodes). Handles RSS 2.0, RSS 1.0 (RDF)
     and Atom, with any namespace layout (matching by localname)."""
-    root = ET.fromstring(fetch(feed_url).read())
+    root = _parse_xml(fetch(feed_url).read())
     chan = next((el for el in root.iter()
                  if _localname(el.tag) in ("channel", "feed")), root)
     eps: list[Episode] = []
