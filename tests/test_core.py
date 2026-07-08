@@ -286,3 +286,15 @@ def test_pi_feed_by_itunes_id(monkeypatch):
         raise OSError("network down")
     monkeypatch.setattr(core, "_pi_get", _boom)
     assert core.pi_feed_by_itunes_id("123") is None   # degrades, never raises
+
+
+def test_pi_get_never_touches_network_without_creds(monkeypatch):
+    monkeypatch.delenv("PODCASTINDEX_API_KEY", raising=False)
+    monkeypatch.delenv("PODCASTINDEX_API_SECRET", raising=False)
+
+    def _fail(*a, **k):
+        pytest.fail("network must not be touched without PI credentials")
+    monkeypatch.setattr(core.urllib.request, "urlopen", _fail)
+    with pytest.raises(ValueError, match="credentials not set"):
+        core._pi_get("/search/byterm", {"q": "x"})
+    assert core.pi_feed_by_itunes_id("123") is None   # degrades, still no network
