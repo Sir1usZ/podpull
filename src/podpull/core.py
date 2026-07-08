@@ -197,29 +197,43 @@ def _item_link(item) -> str:
 _XML_PREDEFINED = frozenset({"amp", "lt", "gt", "quot", "apos"})
 
 
-def _sanitize_xml(raw: bytes) -> bytes:
-    """Best-effort repair of common real-world feed dirt: junk before the
-    declaration, control chars, undefined HTML entities, bare '&'."""
-    m = re.search(rb'<\?xml[^>]*encoding=["\']([A-Za-z0-9._-]+)["\']', raw[:200])
-    enc = m.group(1).decode("ascii", "replace") if m else "utf-8"
-    try:
-        text = raw.decode(enc, "replace")
-    except LookupError:                     # unknown codec name in declaration
-        text = raw.decode("utf-8", "replace")
-    text = text.lstrip("\ufeff\x00 \t\r\n")
-    # we re-encode as UTF-8 below, so the declared encoding must not disagree
-    text = re.sub(r'(<\?xml[^>]*?)\s+encoding=["\'][^"\']*["\']', r"\1", text, count=1)
-    text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", text)
-
+def _repair_entities(text: str) -> str:
     def _entity(mm):
         name = mm.group(1)
         if name in _XML_PREDEFINED:
             return mm.group(0)
         ch = html.entities.html5.get(name + ";")
-        return "".join(f"&#{ord(c)};" for c in ch) if ch else ""
+        # unknown entities stay visible as literal text, never dropped
+        return "".join(f"&#{ord(c)};" for c in ch) if ch else "&amp;" + name + ";"
     text = re.sub(r"&([A-Za-z][A-Za-z0-9]{1,31});", _entity, text)
-    text = re.sub(r"&(?![A-Za-z][A-Za-z0-9]{1,31};|#\d+;|#x[0-9A-Fa-f]+;)", "&amp;", text)
-    return text.encode("utf-8")
+    return re.sub(r"&(?![A-Za-z][A-Za-z0-9]{1,31};|#\d+;|#x[0-9A-Fa-f]+;)", "&amp;", text)
+
+
+def _sanitize_xml(raw: bytes) -> bytes:
+    """Best-effort repair of common real-world feed dirt: junk before the
+    declaration, control chars, undefined HTML entities, bare '&'. CDATA
+    sections pass through untouched. Known limitation: a bare '&' that spells
+    an HTML entity name inside a URL query (\u2026?id=1&sect;ion=2) is converted
+    like an entity \u2014 unfixable without a full parser."""
+    head = raw[:64]
+    if head[:2] in (b"\xff\xfe", b"\xfe\xff"):
+        enc = "utf-16"                        # BOM decides the byte order
+    elif b"\x00" in head:                     # null-interleaved: BOM-less UTF-16
+        enc = "utf-16-be" if head.startswith(b"\x00") else "utf-16-le"
+    else:
+        m = re.search(rb'<\?xml[^>]*encoding=["\']([A-Za-z0-9._-]+)["\']', raw[:200])
+        enc = m.group(1).decode("ascii", "replace") if m else "utf-8"
+    try:
+        text = raw.decode(enc, "replace")
+    except LookupError:                       # unknown codec name in declaration
+        text = raw.decode("utf-8", "replace")
+    text = text.lstrip("\ufeff\x00 \t\r\n")
+    # we re-encode as UTF-8 below, so the declared encoding must not disagree
+    text = re.sub(r'(<\?xml[^>]*?)\s+encoding=["\'][^"\']*["\']', r"\1", text, count=1)
+    text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", text)
+    parts = re.split(r"(<!\[CDATA\[.*?\]\]>)", text, flags=re.S)
+    return "".join(p if p.startswith("<![CDATA[") else _repair_entities(p)
+                   for p in parts).encode("utf-8")
 
 
 def _parse_xml(raw: bytes) -> "ET.Element":

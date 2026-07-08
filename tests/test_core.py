@@ -56,6 +56,37 @@ def test_parse_feed_hopeless_xml_raises(monkeypatch):
         core.parse_feed("https://example.test/feed")
 
 
+def test_sanitize_preserves_cdata_and_unknown_entities(monkeypatch):
+    raw = (
+        b'<?xml version="1.0" encoding="UTF-8"?>\n'
+        b'<rss version="2.0"><channel>\n'
+        b'<title><![CDATA[AT&T R&D Show]]></title>\n'
+        b'<managingEditor>Dirty & Sons</managingEditor>\n'
+        b'<item><title>A &bogus123; B</title>\n'
+        b'<pubDate>Wed, 01 Jul 2026 08:00:00 GMT</pubDate>\n'
+        b'<enclosure url="https://cdn.example.test/x.mp3" type="audio/mpeg"/>\n'
+        b'</item></channel></rss>'
+    )
+    monkeypatch.setattr(core, "fetch", lambda url, timeout=45: io.BytesIO(raw))
+    title, _a, eps = core.parse_feed("https://example.test/feed")
+    assert title == "AT&T R&D Show"          # CDATA content untouched
+    assert eps[0].title == "A &bogus123; B"  # unknown entity preserved, not dropped
+
+
+def test_sanitize_handles_utf16_without_bom(monkeypatch):
+    xml = ('<?xml version="1.0" encoding="UTF-16"?>'
+           '<rss version="2.0"><channel><title>中文播客&nbsp;标题</title>'
+           '<item><title>EP 一</title>'
+           '<pubDate>Wed, 01 Jul 2026 08:00:00 GMT</pubDate>'
+           '<enclosure url="https://cdn.example.test/cn.mp3" type="audio/mpeg"/>'
+           '</item></channel></rss>')
+    raw = xml.encode("utf-16-le")  # deliberately NO BOM
+    monkeypatch.setattr(core, "fetch", lambda url, timeout=45: io.BytesIO(raw))
+    title, _a, eps = core.parse_feed("https://example.test/feed")
+    assert title == "中文播客 标题"
+    assert eps[0].title == "EP 一"
+
+
 def test_classify():
     assert core.classify("1532755821") == ("apple_show", "1532755821")
     assert core.classify("https://podcasts.apple.com/us/podcast/x/id123")[0] == "apple_show"
