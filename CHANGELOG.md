@@ -3,7 +3,7 @@
 All notable changes to this project are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
-## [0.6.0] — 2026-07-07
+## [0.6.0] — 2026-07-08
 
 ### Added
 - `-q/--quiet` flag for `podpull get`: suppresses the spinner/progress UI and prints
