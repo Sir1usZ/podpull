@@ -29,6 +29,17 @@ FEED_CASES = [
      "https://cdn.example.test/dirty1.mp3?a=1&b=2", "2026-06-29"),
     ("utf16_bom.xml", "UTF16 Show", "", 1,
      "https://cdn.example.test/u16.mp3", "2026-06-28"),
+    ("xiaoyuzhou.xml", "忽左忽右", "JustPod", 1,
+     "https://dts-api.xiaoyuzhoufm.com/track/cv4bkgpuglwp/xyz380/media.xyzcdn.net/lvJzoGJDVn.m4a",
+     "2026-07-02"),
+    ("ximalaya.xml", "声动早咖啡", "声动活泼", 1,
+     "https://jt.ximalaya.com//GKwRIW8LWq_ZAX-DKgJcpzTV.m4a?channel=rss&jt=https%3A%2F%2Faod.cos.tx.xmcdn.com%2Fstorages%2Fabc.m4a",
+     "2026-07-06"),
+    ("soundon.xml", "股癌", "謝孟恭", 1,
+     "https://rss.soundon.fm/rssf/954689a5/ep560/rssFileVip.mp3?times=1751700000", "2026-07-05"),
+    ("firstory.xml", "百靈果 News", "百靈果 News", 1,
+     "https://m.cdn.firstory.me/track/cmjaz594i/https%3A%2F%2Ffile.cdn.firstory.me%2Fstory%2Fep500.mp3",
+     "2026-07-04"),
 ]
 
 
