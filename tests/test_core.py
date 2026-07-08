@@ -192,6 +192,35 @@ def test_select_none():
     assert core.select(_eps()) == []
 
 
+def _fake_response(body: bytes, ctype: str):
+    class _Resp(io.BytesIO):
+        status = 200
+        headers = {"Content-Type": ctype}
+
+        def __init__(self):
+            super().__init__(body)
+            self.length = len(body)
+    return _Resp()
+
+
+def test_download_url_rejects_text_response(monkeypatch, tmp_path):
+    monkeypatch.setattr(core.urllib.request, "urlopen",
+                        lambda req, timeout=None: _fake_response(b"deleted", "text/plain; charset=utf-8"))
+    dest = tmp_path / "ep.m4a"
+    with pytest.raises(ValueError, match="not audio"):
+        core.download_url("https://jt.ximalaya.com//x.m4a?bad=1", str(dest))
+    assert not dest.exists()
+
+
+def test_download_url_accepts_audio_and_octet_stream(monkeypatch, tmp_path):
+    for ctype in ("audio/mpeg", "application/octet-stream", ""):
+        monkeypatch.setattr(core.urllib.request, "urlopen",
+                            lambda req, timeout=None, c=ctype: _fake_response(b"AUDIO", c))
+        dest = tmp_path / f"ok-{ctype.replace('/', '_') or 'none'}.mp3"
+        assert core.download_url("https://cdn.example.test/a.mp3", str(dest)) == str(dest)
+        assert dest.read_bytes() == b"AUDIO"
+
+
 def test_fetch_and_download_send_browser_ua(monkeypatch, tmp_path):
     seen = []
 

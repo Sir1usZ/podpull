@@ -391,6 +391,11 @@ def download_url(url: str, dest: str, *, resume: bool = True, on_progress=None) 
         raise
     if existing and getattr(resp, "status", 200) == 200:
         existing = 0                # server ignored Range; restart cleanly
+    ctype = (resp.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+    if ctype.startswith("text/"):
+        # e.g. Ximalaya's CDN answers a stale enclosure query with 200 text/plain
+        raise ValueError(f"server returned {ctype}, not audio — "
+                         "the feed's enclosure URL may be stale")
     mode = "ab" if existing else "wb"
     remaining = resp.length or 0
     total = (remaining + existing) if remaining else 0
