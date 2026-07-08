@@ -54,6 +54,12 @@ def _eps():
 def test_episode_date():
     assert _eps()[0].date == "2026-06-27"
     assert Episode(title="x", pub="garbage", url="u").date == "0000-00-00"
+    # RFC-822 with non-zero-padded day (Lizhi) — parsedate handles it
+    assert Episode(title="x", pub="Sun, 5 Jul 2026 21:00:00 +0800", url="u").date == "2026-07-05"
+    # ISO-8601 (Atom published / dc:date), with and without Z
+    assert Episode(title="x", pub="2026-07-01T08:30:00Z", url="u").date == "2026-07-01"
+    assert Episode(title="x", pub="2026-07-01T08:30:00+08:00", url="u").date == "2026-07-01"
+    assert Episode(title="x", pub="", url="u").date == "0000-00-00"
 
 
 def test_select_match():

@@ -13,6 +13,7 @@ import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
+from datetime import datetime
 from email.utils import parsedate_to_datetime
 
 # A plain browser User-Agent. Some podcast CDNs (e.g. xiaoyuzhou's feed.xyzfm.space)
@@ -37,10 +38,15 @@ class Episode:
 
     @property
     def date(self) -> str:
-        try:
-            return parsedate_to_datetime(self.pub).strftime("%Y-%m-%d")
-        except Exception:
-            return "0000-00-00"
+        for parse in (
+            lambda s: parsedate_to_datetime(s),                                   # RFC-822
+            lambda s: datetime.fromisoformat(s.strip().replace("Z", "+00:00")),   # ISO-8601
+        ):
+            try:
+                return parse(self.pub).strftime("%Y-%m-%d")
+            except Exception:
+                continue
+        return "0000-00-00"
 
 
 @dataclass
