@@ -6,6 +6,8 @@ All notable changes to this project are documented here. Format loosely follows
 ## [0.6.0] — 2026-07-07
 
 ### Added
+- `-q/--quiet` flag for `podpull get`: suppresses the spinner/progress UI and prints
+  only saved file paths to stdout — for scripting/piping. (#1, thanks @adjenk!)
 - Robust feed parsing: RSS 2.0 / RSS 1.0 (RDF) / Atom, any-namespace matching,
   `media:content` + Atom-enclosure fallbacks, dirty-XML sanitize-and-retry
   (undefined entities, bare `&`, control chars), ISO-8601 dates.
