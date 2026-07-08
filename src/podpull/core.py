@@ -117,32 +117,98 @@ def apple_show_to_feed(src: str) -> tuple[str, str, str, str]:
     return feed, r.get("collectionName", ""), r.get("artistName", ""), pid
 
 
+def _localname(tag) -> str:
+    """'{ns}Tag' -> 'tag'. Comments/PIs have non-str tags -> ''."""
+    if not isinstance(tag, str):
+        return ""
+    return tag.rsplit("}", 1)[-1].lower()
+
+
+def _clean(text) -> str:
+    return re.sub(r"\s+", " ", (text or "").strip())
+
+
+def _first_text(el, *names) -> str:
+    """First non-empty direct-child text whose localname is in names."""
+    wanted = {n.lower() for n in names}
+    for child in el:
+        if _localname(child.tag) in wanted and _clean(child.text):
+            return _clean(child.text)
+    return ""
+
+
+def _author(el) -> str:
+    """itunes:author / atom author>name -> managingEditor -> dc:creator."""
+    for name in ("author", "managingeditor", "creator"):
+        for child in el:
+            if _localname(child.tag) == name:
+                txt = _first_text(child, "name") or _clean(child.text)
+                if txt:
+                    return txt
+    return ""
+
+
+def _pub(item) -> str:
+    """pubDate -> dc:date -> atom published -> atom updated (raw string)."""
+    for name in ("pubdate", "date", "published", "updated"):
+        for child in item:
+            if _localname(child.tag) == name and _clean(child.text):
+                return child.text.strip()
+    return ""
+
+
+def _find_enclosure(item) -> tuple[str, str]:
+    """-> (audio_url, mime) or ('', ''). Priority: enclosure > media:content
+    (audio) > atom link rel=enclosure. First match wins — WavPub/Omny items
+    carry BOTH enclosure and media:content; one item must yield one URL."""
+    for child in item:
+        if _localname(child.tag) == "enclosure" and child.get("url"):
+            return child.get("url"), child.get("type") or ""
+    for child in item:
+        if _localname(child.tag) == "content" and child.get("url"):
+            mime = child.get("type") or ""
+            if mime.startswith("audio/") or child.get("medium") == "audio":
+                return child.get("url"), mime
+    for child in item:
+        if (_localname(child.tag) == "link" and child.get("rel") == "enclosure"
+                and child.get("href")):
+            return child.get("href"), child.get("type") or ""
+    return "", ""
+
+
+def _item_link(item) -> str:
+    link = _first_text(item, "link")
+    if link:
+        return link
+    for child in item:  # atom: <link href=…/> with no/alternate rel
+        if (_localname(child.tag) == "link" and child.get("href")
+                and child.get("rel") in (None, "alternate")):
+            return child.get("href")
+    return ""
+
+
 def parse_feed(feed_url: str) -> tuple[str, str, list[Episode]]:
-    """-> (show_title, show_author, episodes)."""
+    """-> (show_title, show_author, episodes). Handles RSS 2.0, RSS 1.0 (RDF)
+    and Atom, with any namespace layout (matching by localname)."""
     root = ET.fromstring(fetch(feed_url).read())
-    chan = root.find(".//channel")
-    title = (chan.findtext("title") if chan is not None else "") or ""
-    itunes = "{http://www.itunes.com/dtds/podcast-1.0.dtd}"
-    author = ""
-    if chan is not None:
-        author = (chan.findtext(f"{itunes}author") or "").strip()
+    chan = next((el for el in root.iter()
+                 if _localname(el.tag) in ("channel", "feed")), root)
     eps: list[Episode] = []
-    for it in root.findall(".//item"):
-        enc = it.find("enclosure")
-        if enc is None:
+    for it in root.iter():
+        if _localname(it.tag) not in ("item", "entry"):
             continue
-        enc_url = enc.get("url")
-        if not enc_url:
+        url, mime = _find_enclosure(it)
+        if not url:
             continue
         eps.append(Episode(
-            title=(it.findtext("title") or "").strip(),
-            pub=(it.findtext("pubDate") or "").strip(),
-            url=enc_url,
-            mime=enc.get("type") or "",
-            guid=(it.findtext("guid") or "").strip(),
-            link=(it.findtext("link") or "").strip(),
+            title=_first_text(it, "title"),
+            pub=_pub(it),
+            url=url,
+            mime=mime,
+            guid=_first_text(it, "guid", "id"),
+            link=_item_link(it),
         ))
-    return title.strip(), author, eps
+    return _first_text(chan, "title"), _author(chan), eps
 
 
 def resolve_show(src: str) -> Show:

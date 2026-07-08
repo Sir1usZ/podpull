@@ -1,8 +1,39 @@
 """Pure-logic tests (no network)."""
+import io
+from pathlib import Path
+
 import pytest
 
 from podpull import core
 from podpull.core import Episode
+
+FIXTURES = Path(__file__).parent / "fixtures" / "feeds"
+
+# (fixture, show_title, show_author, n_episodes, first_url, first_date)
+FEED_CASES = [
+    ("rss2_plain.xml", "Plain RSS2 Show", "Plain Author", 2,
+     "https://cdn.example.test/ep2.mp3", "2026-07-03"),
+    ("rss10_rdf.xml", "RDF Show", "RDF Author", 1,
+     "https://cdn.example.test/rdf1.mp3", "2026-06-30"),
+    ("atom.xml", "Atom Show", "Atom Author", 1,
+     "https://cdn.example.test/atom1.mp3", "2026-07-01"),
+]
+
+
+def _parse_fixture(monkeypatch, fname):
+    raw = (FIXTURES / fname).read_bytes()
+    monkeypatch.setattr(core, "fetch", lambda url, timeout=45: io.BytesIO(raw))
+    return core.parse_feed("https://example.test/feed")
+
+
+@pytest.mark.parametrize("fname,title,author,count,first_url,first_date", FEED_CASES)
+def test_parse_feed_fixture(monkeypatch, fname, title, author, count, first_url, first_date):
+    t, a, eps = _parse_fixture(monkeypatch, fname)
+    assert t == title
+    assert a == author
+    assert len(eps) == count
+    assert eps[0].url == first_url
+    assert eps[0].date == first_date
 
 
 def test_classify():

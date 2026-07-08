@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Atom Show</title>
+  <author><name>Atom Author</name></author>
+  <entry>
+    <title>Atom EP1</title>
+    <id>atom-ep1</id>
+    <published>2026-07-01T08:30:00Z</published>
+    <link rel="alternate" href="https://example.test/atom1"/>
+    <link rel="enclosure" href="https://cdn.example.test/atom1.mp3" type="audio/mpeg"/>
+  </entry>
+</feed>
