@@ -114,11 +114,13 @@ def apple_show_to_feed(src: str) -> tuple[str, str, str, str]:
         raise ValueError(f"No Apple podcast id (idNNN) found in: {src}")
     pid = m.group(1)
     results = fetch_json(f"{ITUNES_LOOKUP}?id={pid}").get("results", [])
-    if not results:
-        raise ValueError(f"iTunes lookup returned nothing for id={pid}")
-    r = results[0]
+    r = results[0] if results else {}
     feed = r.get("feedUrl")
+    if not feed and pi_credentials():      # second directory, BYOK-only
+        feed = pi_feed_by_itunes_id(pid)
     if not feed:
+        if not results:
+            raise ValueError(f"iTunes lookup returned nothing for id={pid}")
         raise ValueError(f"No feedUrl for id={pid} (not a podcast?)")
     return feed, r.get("collectionName", ""), r.get("artistName", ""), pid
 

@@ -298,3 +298,27 @@ def test_pi_get_never_touches_network_without_creds(monkeypatch):
     with pytest.raises(ValueError, match="credentials not set"):
         core._pi_get("/search/byterm", {"q": "x"})
     assert core.pi_feed_by_itunes_id("123") is None   # degrades, still no network
+
+
+def test_apple_show_to_feed_pi_fallback(monkeypatch):
+    monkeypatch.setenv("PODCASTINDEX_API_KEY", "k")
+    monkeypatch.setenv("PODCASTINDEX_API_SECRET", "s")
+    monkeypatch.setattr(core, "fetch_json", lambda url: {"results": []})   # iTunes empty
+    monkeypatch.setattr(core, "pi_feed_by_itunes_id",
+                        lambda pid: "https://feed.example.test/fallback")
+    feed, name, author, pid = core.apple_show_to_feed("1478791559")
+    assert feed == "https://feed.example.test/fallback"
+    assert pid == "1478791559"
+    assert name == "" and author == ""
+
+
+def test_apple_show_to_feed_no_creds_still_raises(monkeypatch):
+    monkeypatch.delenv("PODCASTINDEX_API_KEY", raising=False)
+    monkeypatch.delenv("PODCASTINDEX_API_SECRET", raising=False)
+    monkeypatch.setattr(core, "fetch_json", lambda url: {"results": []})
+    calls = []
+    monkeypatch.setattr(core, "pi_feed_by_itunes_id",
+                        lambda pid: calls.append(pid))
+    with pytest.raises(ValueError):
+        core.apple_show_to_feed("123")
+    assert calls == []                     # PI never contacted without keys
